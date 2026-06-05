@@ -795,7 +795,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
       </div>
 
       {/* Bottom Option Grid: 10 dynamic cards */}
-      <div style={{
+      <div className="rain-game-bottom-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(5, 1fr)',
         gap: '8px',
@@ -811,6 +811,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
               key={card.id}
               disabled={gameState !== 'playing'}
               onClick={() => handleCardClick(card)}
+              className="rain-game-bottom-card"
               style={{
                 padding: '10px 4px',
                 fontSize: '0.9rem',

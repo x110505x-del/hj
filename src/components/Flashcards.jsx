@@ -580,7 +580,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
         }}>
           <div>
             <span style={{
-              fontSize: '12rem',
+              fontSize: 'clamp(5.5rem, 18vw, 11rem)',
               color: '#1f2937',
               fontWeight: 'bold',
               fontFamily: '"AppleMyungjo", "Songti SC", "Songti TC", "Batang", serif'
@@ -590,12 +590,12 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
           {learningPhase === 'learn' ? (
             <div style={{ marginTop: '10px' }}>
               <h2 style={{
-                fontSize: '3.2rem',
+                fontSize: 'clamp(1.8rem, 6.5vw, 3rem)',
                 color: 'var(--color-primary)',
                 margin: 0,
                 fontWeight: 'bold'
               }}>
-                {currentHanja ? currentHanja.meaning : ''} <span style={{ fontSize: '2.5rem', color: 'var(--color-accent)' }}>{currentHanja ? currentHanja.sound : ''}</span>
+                {currentHanja ? currentHanja.meaning : ''} <span style={{ fontSize: 'clamp(1.4rem, 5vw, 2.2rem)', color: 'var(--color-accent)' }}>{currentHanja ? currentHanja.sound : ''}</span>
               </h2>
             </div>
           ) : (
@@ -607,12 +607,12 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
                 </span>
               ) : (
                 <h2 style={{
-                  fontSize: '3.2rem',
+                  fontSize: 'clamp(1.8rem, 6.5vw, 3rem)',
                   color: 'var(--color-primary)',
                   margin: 0,
                   fontWeight: 'bold'
                 }}>
-                  {currentHanja ? currentHanja.meaning : ''} <span style={{ fontSize: '2.5rem', color: 'var(--color-accent)' }}>{currentHanja ? currentHanja.sound : ''}</span>
+                  {currentHanja ? currentHanja.meaning : ''} <span style={{ fontSize: 'clamp(1.4rem, 5vw, 2.2rem)', color: 'var(--color-accent)' }}>{currentHanja ? currentHanja.sound : ''}</span>
                 </h2>
               )}
             </div>

@@ -66,7 +66,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           학습할 한자 급수를 선택하세요
         </label>
         
-        <div style={{
+        <div className="level-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(8, 1fr)',
           gap: '8px',
@@ -110,6 +110,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
         {/* Mode 1: Flashcards */}
         <div 
           onClick={() => handleModeStart('flashcard')}
+          className="study-mode-card"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -160,6 +161,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
         {/* Mode 2: Speed Quiz */}
         <div 
           onClick={() => handleModeStart('speed_quiz')}
+          className="study-mode-card"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -210,6 +212,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
         {/* Mode 3: Rain Game */}
         <div 
           onClick={() => handleModeStart('rain_game')}
+          className="study-mode-card"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -260,6 +263,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
         {/* Mode 4: Writing Practice */}
         <div 
           onClick={() => handleModeStart('writing_practice')}
+          className="study-mode-card"
           style={{
             display: 'flex',
             alignItems: 'center',
