@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+  console.log("Testing Google TTS...");
+  const text = encodeURIComponent("테스트입니다");
+  const audio = new Audio(`https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${text}&tl=ko&client=tw-ob`);
+  audio.play().then(() => {
+    console.log("Google TTS played successfully.");
+  }).catch(e => {
+    console.error("Google TTS failed:", e.message);
+  });
+</script>
+</body>
+</html>
