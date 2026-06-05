@@ -198,7 +198,8 @@ export const speakKorean = (text, options = {}) => {
     onEnd = null,
     onError = null,
     repeatTwice = false,
-    skipCancel = false
+    skipCancel = false,
+    useCloudTts = true // Prefer high-quality cloud neural voice for premium, natural pronunciation
   } = options;
 
   // Format text: if repeatTwice is requested, read meaning and sound twice
@@ -236,12 +237,12 @@ export const speakKorean = (text, options = {}) => {
     console.warn("TTS: Cancel error:", cancelErr);
   }
 
-  // Delay actual speak call by 100ms to allow asynchronous speechSynthesis cancel to finalize in Chrome/Safari
-  const runSpeak = () => {
+  // Local native SpeechSynthesis fallback
+  const runLocalSpeechSynthesis = () => {
     try {
       if (!('speechSynthesis' in window)) {
-        console.log("TTS: SpeechSynthesis not supported. Using Audio API fallback.");
-        playFallbackAudio(finalSpeechText, rate, onEnd, onError);
+        console.log("TTS: SpeechSynthesis not supported.");
+        if (onError) onError(new Error("No TTS engine available"));
         return;
       }
 
@@ -308,13 +309,9 @@ export const speakKorean = (text, options = {}) => {
         }
 
         if (selectedVoice) {
-          console.log(`TTS: Selected voice: "${selectedVoice.name}" (Lang: ${selectedVoice.lang}, Local: ${selectedVoice.localService})`);
+          console.log(`TTS: Selected local voice: "${selectedVoice.name}" (Lang: ${selectedVoice.lang}, Local: ${selectedVoice.localService})`);
           utterance.voice = selectedVoice;
-        } else {
-          console.log("TTS: No matching high-quality voice found. Using default.");
         }
-      } else {
-        console.log("TTS: No preloaded Korean voice list. Using default voice with lang tag.");
       }
 
       // Set pitch (pitch === null uses defaults)
@@ -334,40 +331,55 @@ export const speakKorean = (text, options = {}) => {
       let hasStarted = false;
       utterance.onstart = () => {
         hasStarted = true;
-        console.log(`TTS: Speech started: "${finalSpeechText}"`);
+        console.log(`TTS Local: Speech started: "${finalSpeechText}"`);
       };
 
       utterance.onend = () => {
-        console.log("TTS: Utterance onEnd fired");
+        console.log("TTS Local: Utterance onEnd fired");
         cleanup();
         if (onEnd) onEnd();
       };
 
       utterance.onerror = (e) => {
-        console.error(`TTS Error: Utterance onError fired. Error type: ${e.error || 'unknown'}. Message: ${e.message || ''}`, e);
+        console.error(`TTS Local Error: Utterance onError fired. Error: ${e.error || 'unknown'}`, e);
         cleanup();
+        // Fallback to cloud audio if local speech synthesis fails
         playFallbackAudio(finalSpeechText, rate, onEnd, onError);
       };
 
       // Speak
-      console.log("TTS: Calling speechSynthesis.speak()");
+      console.log("TTS Local: Calling speechSynthesis.speak()");
       if (window.speechSynthesis.resume) {
         window.speechSynthesis.resume();
       }
       window.speechSynthesis.speak(utterance);
 
-      // Watchdog Timer: If TTS engine hangs after 3000ms, force fallback to Audio!
+      // Watchdog Timer: If local engine hangs, force fallback to Audio
       setTimeout(() => {
         if (!hasStarted) {
-          console.warn("TTS Warning: Local speech engine hanging! Falling back to Audio API.");
+          console.warn("TTS Local Warning: Local speech engine hanging! Falling back to Audio API.");
           window.speechSynthesis.cancel();
           playFallbackAudio(finalSpeechText, rate, onEnd, onError);
         }
       }, 3000);
 
     } catch (err) {
-      console.error("TTS Error: Speech synthesis failed with exception inside runSpeak:", err);
+      console.error("TTS Local Error: Speech synthesis failed with exception:", err);
       playFallbackAudio(finalSpeechText, rate, onEnd, onError);
+    }
+  };
+
+  const runSpeak = () => {
+    // If online, prioritize premium cloud-based neural voice (Google/Youdao)
+    if (useCloudTts && typeof navigator !== 'undefined' && navigator.onLine) {
+      console.log("TTS: Using premium Cloud TTS for natural voice.");
+      playFallbackAudio(finalSpeechText, rate, onEnd, (err) => {
+        console.warn("TTS: Cloud TTS failed. Falling back to local SpeechSynthesis:", err);
+        runLocalSpeechSynthesis();
+      });
+    } else {
+      console.log("TTS: Offline or cloud disabled. Using local SpeechSynthesis.");
+      runLocalSpeechSynthesis();
     }
   };
 
