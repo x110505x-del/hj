@@ -358,85 +358,119 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
         minHeight: '650px',
         maxWidth: '750px',
         margin: '0 auto',
-        padding: '40px 20px',
+        padding: '24px 16px',
         textAlign: 'center',
-        gap: '30px',
+        gap: '20px',
         boxSizing: 'border-box'
       }}>
         <div>
-          <h2 style={{ fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '12px', fontWeight: 'bold' }}>
-            한자쓰기 연습
+          <h2 style={{ fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '8px', fontWeight: 'bold' }}>
+            한자쓰기 연습 ({level})
           </h2>
-          <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
-            한자의 획이 써지는 순서를 눈으로 관찰하며 획순을 익힐 수 있습니다.<br/>
-            시작 버튼을 누르면 획순 애니메이션이 즉시 재생됩니다.
+          <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', lineHeight: '1.5', marginBottom: '8px' }}>
+            아래 배정한자 중 획순 애니메이션을 보고 싶은 한자를 클릭하세요.<br/>
+            선택한 한자의 쓰는 법이 즉시 화면에 재생됩니다.
           </p>
         </div>
-        
-        <button 
-          onClick={() => {
-            unlockTtsAudio();
-            initialSpeakTriggeredRef.current = true;
-            setHasStarted(true);
-            speakCurrent(true);
-          }}
-          className="theme-btn theme-btn-primary" 
-          style={{
-            fontSize: '1.3rem',
-            padding: '16px 40px',
-            borderRadius: '16px',
-            boxShadow: 'var(--shadow-md)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontWeight: 'bold'
-          }}
-        >
-          <Play size={22} fill="currentColor" /> 연습 시작하기
-        </button>
 
         {/* TTS Toggle Button on Start Screen */}
-        <div style={{ marginTop: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', width: '100%' }}>
           <button
             onClick={onToggleSound}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              padding: '8px 16px',
+              gap: '6px',
+              padding: '6px 12px',
               borderRadius: '20px',
               border: '1px solid var(--color-border)',
               backgroundColor: '#ffffff',
               color: 'var(--color-text-muted)',
               fontWeight: 'bold',
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               cursor: 'pointer',
-              boxShadow: 'var(--shadow-sm)',
-              margin: '0 auto'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             {soundOn ? (
               <>
-                <Volume2 size={16} style={{ color: 'var(--color-primary)' }} />
-                <span>TTS 효과음 켜짐</span>
+                <Volume2 size={14} style={{ color: 'var(--color-primary)' }} />
+                <span>TTS 켜짐</span>
               </>
             ) : (
               <>
-                <VolumeX size={16} style={{ color: '#ef4444' }} />
-                <span>TTS 효과음 꺼짐 (음소거)</span>
+                <VolumeX size={14} style={{ color: '#ef4444' }} />
+                <span>TTS 꺼짐</span>
               </>
             )}
           </button>
         </div>
 
-        <button onClick={onBack} className="theme-btn" style={{ marginTop: '15px', fontSize: '0.95rem' }}>
-          목록으로 돌아가기
+        {/* Grid Selection of Hanja */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))',
+          gap: '8px',
+          width: '100%',
+          maxHeight: '420px',
+          overflowY: 'auto',
+          padding: '12px',
+          boxSizing: 'border-box',
+          backgroundColor: '#f8fafc',
+          borderRadius: '16px',
+          border: '1px solid var(--color-border)',
+          scrollBehavior: 'smooth'
+        }}>
+          {allHanja.map((hanja, idx) => (
+            <button
+              key={hanja.char}
+              onClick={() => {
+                unlockTtsAudio();
+                setCurrentIndex(idx);
+                initialSpeakTriggeredRef.current = true;
+                setHasStarted(true);
+                speakKorean(`${hanja.meaning} ${hanja.sound}`, {
+                  repeatTwice: true,
+                  skipCancel: true
+                });
+              }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 4px',
+                borderRadius: '8px',
+                border: '1px solid var(--color-border)',
+                backgroundColor: '#ffffff',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.04)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--color-border)';
+                e.currentTarget.style.backgroundColor = '#ffffff';
+              }}
+            >
+              <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', fontFamily: 'serif' }}>
+                {hanja.char}
+              </span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>
+                {hanja.sound}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <button onClick={onBack} className="theme-btn" style={{ marginTop: '10px', fontSize: '0.95rem', padding: '8px 24px' }}>
+          급수 선택 목록으로 돌아가기
         </button>
       </div>
     );
@@ -464,7 +498,7 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
     }}>
       {/* Top Navigation */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onBack} className="theme-btn" style={{
+        <button onClick={() => setHasStarted(false)} className="theme-btn" style={{
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
