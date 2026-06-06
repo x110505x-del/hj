@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Volume2, VolumeX, Eye } from 'lucide-react';
-import { getHanjaByLevel } from '../services/hanjaDb';
+import { getHanjaByLevel, HANJA_RAW_DATA, HANJA_LEVELS } from '../services/hanjaDb';
 import { speakKorean, unlockTtsAudio } from '../utils/tts';
 
 // Predefined coordinate strokes for 8급 characters (Normalized 100x100 space)
@@ -64,7 +64,22 @@ const STROKE_COORDINATES = {
 };
 
 export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleSound }) {
-  const allHanja = getHanjaByLevel(level);
+  const allHanja = useMemo(() => {
+    const list = [];
+    const seenChars = new Set();
+    
+    // Accumulate all characters from all levels
+    HANJA_LEVELS.forEach(lvl => {
+      const data = HANJA_RAW_DATA[lvl] || [];
+      data.forEach(h => {
+        if (!seenChars.has(h.char)) {
+          seenChars.add(h.char);
+          list.push({ ...h, levelOrigin: lvl });
+        }
+      });
+    });
+    return list;
+  }, []);
   
   const [hasStarted, setHasStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -116,7 +131,7 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
     
     const char = currentHanja.char;
     // jsDelivr CDN provides traditional Chinese characters metadata of Hanzi Writer
-    const url = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/${encodeURIComponent(char)}.json`;
+    const url = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2/${encodeURIComponent(char)}.json`;
     
     fetch(url)
       .then((res) => {
@@ -133,7 +148,7 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
         setStrokeData(null);
         setIsLoadingStrokes(false);
       });
-  }, [currentIndex, level]);
+  }, [currentIndex]);
 
   const handleNext = () => {
     if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
@@ -166,16 +181,7 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
     });
   };
 
-  // Trigger speech when card changes
-  useEffect(() => {
-    if (hasStarted && currentHanja) {
-      if (initialSpeakTriggeredRef.current) {
-        initialSpeakTriggeredRef.current = false;
-        return;
-      }
-      speakCurrent();
-    }
-  }, [currentIndex, hasStarted]);
+
 
   // Handle animation loop
   useEffect(() => {
@@ -456,7 +462,7 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
       }}>
         <div>
           <h2 style={{ fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '8px', fontWeight: 'bold' }}>
-            한자쓰기 연습 ({level})
+            한자쓰기 연습 (전체 급수)
           </h2>
           <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', lineHeight: '1.5', marginBottom: '8px' }}>
             아래 배정한자 중 획순 애니메이션을 보고 싶은 한자를 클릭하세요.<br/>
@@ -557,10 +563,6 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
                     setCurrentIndex(origIdx !== -1 ? origIdx : 0);
                     initialSpeakTriggeredRef.current = true;
                     setHasStarted(true);
-                    speakKorean(`${hanja.meaning} ${hanja.sound}`, {
-                      repeatTwice: true,
-                      skipCancel: true
-                    });
                   }}
                   style={{
                     display: 'flex',
@@ -635,7 +637,7 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
           <ArrowLeft size={14} /> 목록
         </button>
         <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>
-          {level} 쓰기 연습 ({currentIndex + 1} / {allHanja.length})
+          {currentHanja?.levelOrigin || level} 쓰기 연습 ({currentIndex + 1} / {allHanja.length})
         </span>
       </div>
 
