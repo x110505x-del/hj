@@ -78,10 +78,47 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
   const pauseTimerRef = useRef(null);
   const isCompletedPauseRef = useRef(false); // Controls 1.8s freeze of completed solid character
   
+  const [strokeData, setStrokeData] = useState(null);
+  const [isLoadingStrokes, setIsLoadingStrokes] = useState(false);
+
   const canvasSize = 260;
   const currentHanja = allHanja[currentIndex];
 
   const initialSpeakTriggeredRef = useRef(false);
+
+  // Fetch traditional character stroke vector data dynamically
+  useEffect(() => {
+    if (!currentHanja) return;
+    
+    setIsLoadingStrokes(true);
+    setStrokeData(null);
+    
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    strokeProgressRef.current = 0;
+    currentStrokeIndexRef.current = 0;
+    isCompletedPauseRef.current = false;
+    
+    const char = currentHanja.char;
+    // jsDelivr CDN provides traditional Chinese characters metadata of Hanzi Writer
+    const url = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/${encodeURIComponent(char)}.json`;
+    
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load stroke data');
+        return res.json();
+      })
+      .then((data) => {
+        setStrokeData(data);
+        setIsLoadingStrokes(false);
+        if (hasStarted) setIsPlaying(true);
+      })
+      .catch((err) => {
+        console.warn('Fallback to local font rendering:', err);
+        setStrokeData(null);
+        setIsLoadingStrokes(false);
+      });
+  }, [currentIndex, level]);
 
   const handleNext = () => {
     if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
@@ -135,20 +172,10 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    const vectorStrokes = STROKE_COORDINATES[currentHanja.char];
-    const hasVector = !!vectorStrokes;
     const textX = canvasSize / 2;
     const textY = canvasSize / 2 + 10;
     const fontStr = 'bold 150px "AppleMyungjo", "Songti SC", "Songti TC", "Batang", serif';
 
-    // Translates normalized 100x100 coordinates to align perfectly with the Myeongjo font glyph
-    const getCanvasCoords = (pt) => {
-      const scale = 0.82; // Shrinks vector scale to exactly match 150px font bounding box
-      const x = textX + ((pt[0] - 50) / 100) * canvasSize * scale;
-      const y = textY + ((pt[1] - 50) / 100) * canvasSize * scale;
-      return { x, y };
-    };
-    
     const drawGrid = () => {
       ctx.clearRect(0, 0, canvasSize, canvasSize);
       
@@ -171,113 +198,114 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
     const animate = () => {
       drawGrid();
 
-      // If in completed freeze state, draw completed solid text directly and request next frame
-      if (isCompletedPauseRef.current) {
-        ctx.save();
-        ctx.font = fontStr;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#1e293b'; // Solid completed text
-        ctx.fillText(currentHanja.char, textX, textY);
-        ctx.restore();
-
-        if (isPlaying) {
-          animationFrameRef.current = requestAnimationFrame(animate);
-        }
-        return;
-      }
-
-      // Create primary offscreen canvas to hold the text mask (destination)
-      const offscreen = document.createElement('canvas');
-      offscreen.width = canvasSize;
-      offscreen.height = canvasSize;
-      const oCtx = offscreen.getContext('2d');
-
-      // Draw the text glyph (destination pixels)
-      oCtx.font = fontStr;
-      oCtx.textAlign = 'center';
-      oCtx.textBaseline = 'middle';
-      oCtx.fillStyle = '#1e293b';
-      oCtx.fillText(currentHanja.char, textX, textY);
-
-      // Create a temporary canvas to paint all strokes together in normal source-over mode
-      const strokesCanvas = document.createElement('canvas');
-      strokesCanvas.width = canvasSize;
-      strokesCanvas.height = canvasSize;
-      const sCtx = strokesCanvas.getContext('2d');
-
-      let brushX = 0;
-      let brushY = 0;
-      let isBrushActive = false;
-
-      if (hasVector) {
-        // --- Premium Vector Path Drawing ---
-        const totalStrokes = vectorStrokes.length;
+      if (strokeData) {
+        // --- 1. SVG-based Realistic Stroke Drawing ---
+        const totalStrokes = strokeData.strokes.length;
         const currentStrokeIdx = currentStrokeIndexRef.current;
 
-        // Draw all completed strokes in normal mode
-        sCtx.strokeStyle = '#1e293b';
-        sCtx.lineWidth = 26; 
-        sCtx.lineCap = 'round';
-        sCtx.lineJoin = 'round';
-        
+        // A. Draw light-gray guide outline of the complete Hanja
+        ctx.save();
+        ctx.scale(canvasSize / 1024, canvasSize / 1024);
+        ctx.translate(0, 900);
+        ctx.scale(1, -1);
+        ctx.fillStyle = 'rgba(226, 232, 240, 0.55)'; // Light gray guide
+        strokeData.strokes.forEach((strokeStr) => {
+          const path = new Path2D(strokeStr);
+          ctx.fill(path);
+        });
+        ctx.restore();
+
+        // B. Draw all completed strokes in dark slate (#1e293b)
+        ctx.save();
+        ctx.scale(canvasSize / 1024, canvasSize / 1024);
+        ctx.translate(0, 900);
+        ctx.scale(1, -1);
+        ctx.fillStyle = '#1e293b';
         for (let i = 0; i < currentStrokeIdx; i++) {
-          sCtx.beginPath();
-          const stroke = vectorStrokes[i];
-          stroke.forEach((pt, idx) => {
-            const coords = getCanvasCoords(pt);
-            if (idx === 0) sCtx.moveTo(coords.x, coords.y);
-            else sCtx.lineTo(coords.x, coords.y);
-          });
-          sCtx.stroke();
+          const path = new Path2D(strokeData.strokes[i]);
+          ctx.fill(path);
         }
+        ctx.restore();
 
-        // Draw the current animating stroke
+        let brushX = 0;
+        let brushY = 0;
+        let isBrushActive = false;
+
+        // C. Draw current animating stroke partially
         if (currentStrokeIdx < totalStrokes) {
-          const stroke = vectorStrokes[currentStrokeIdx];
-          sCtx.beginPath();
-          
-          const startCoords = getCanvasCoords(stroke[0]);
-          sCtx.moveTo(startCoords.x, startCoords.y);
-          
-          brushX = startCoords.x;
-          brushY = startCoords.y;
+          ctx.save();
+          // Transform coordinates to 1024x1024 space with inverted Y
+          ctx.scale(canvasSize / 1024, canvasSize / 1024);
+          ctx.translate(0, 900);
+          ctx.scale(1, -1);
 
-          // Interpolate current stroke position
-          if (stroke.length === 2) {
-            const endCoords = getCanvasCoords(stroke[1]);
-            brushX = startCoords.x + (endCoords.x - startCoords.x) * strokeProgressRef.current;
-            brushY = startCoords.y + (endCoords.y - startCoords.y) * strokeProgressRef.current;
-            sCtx.lineTo(brushX, brushY);
-          } else if (stroke.length > 2) {
-            const midCoords = getCanvasCoords(stroke[1]);
-            const endCoords = getCanvasCoords(stroke[2]);
+          // Clip drawing to the outline of the current stroke
+          const clipPath = new Path2D(strokeData.strokes[currentStrokeIdx]);
+          ctx.clip(clipPath);
+
+          // Draw the thick median line up to progress along the median path
+          const medianPoints = strokeData.medians[currentStrokeIdx];
+          ctx.beginPath();
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 140; // Thick line width covers the stroke width
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+
+          if (medianPoints && medianPoints.length > 0) {
+            ctx.moveTo(medianPoints[0][0], medianPoints[0][1]);
             
-            if (strokeProgressRef.current <= 0.5) {
-              const ratio = strokeProgressRef.current * 2;
-              brushX = startCoords.x + (midCoords.x - startCoords.x) * ratio;
-              brushY = startCoords.y + (midCoords.y - startCoords.y) * ratio;
-              sCtx.lineTo(brushX, brushY);
-            } else {
-              const ratio = (strokeProgressRef.current - 0.5) * 2;
-              sCtx.lineTo(midCoords.x, midCoords.y);
-              brushX = midCoords.x + (endCoords.x - midCoords.x) * ratio;
-              brushY = midCoords.y + (endCoords.y - midCoords.y) * ratio;
-              sCtx.lineTo(brushX, brushY);
+            // Calculate length of median path
+            let totalLength = 0;
+            const segmentLengths = [];
+            for (let j = 1; j < medianPoints.length; j++) {
+              const dx = medianPoints[j][0] - medianPoints[j-1][0];
+              const dy = medianPoints[j][1] - medianPoints[j-1][1];
+              const len = Math.sqrt(dx*dx + dy*dy);
+              segmentLengths.push(len);
+              totalLength += len;
             }
+            
+            const targetLength = totalLength * strokeProgressRef.current;
+            let currentLength = 0;
+            let brushPos = { x: medianPoints[0][0], y: medianPoints[0][1] };
+            
+            for (let j = 1; j < medianPoints.length; j++) {
+              const p1 = medianPoints[j-1];
+              const p2 = medianPoints[j];
+              const len = segmentLengths[j-1];
+              
+              if (currentLength + len <= targetLength) {
+                ctx.lineTo(p2[0], p2[1]);
+                currentLength += len;
+                brushPos = { x: p2[0], y: p2[1] };
+              } else {
+                const remaining = targetLength - currentLength;
+                const ratio = remaining / len;
+                const targetX = p1[0] + (p2[0] - p1[0]) * ratio;
+                const targetY = p1[1] + (p2[1] - p1[1]) * ratio;
+                ctx.lineTo(targetX, targetY);
+                brushPos = { x: targetX, y: targetY };
+                break;
+              }
+            }
+            ctx.stroke();
+            
+            // Map the brush coordinates back to canvas dimensions
+            brushX = brushPos.x * (canvasSize / 1024);
+            brushY = (900 - brushPos.y) * (canvasSize / 1024);
+            isBrushActive = true;
           }
-          sCtx.stroke();
-          isBrushActive = true;
+          
+          ctx.restore();
 
-          // Progress incremental steps (adjusted by Speed multiplier)
-          strokeProgressRef.current += 0.025 * speed;
-
+          // Increment progress based on speed multiplier
+          strokeProgressRef.current += 0.02 * speed;
           if (strokeProgressRef.current >= 1.0) {
             strokeProgressRef.current = 0;
             currentStrokeIndexRef.current += 1;
           }
         } else {
-          // Completed drawing: enter freeze mode
+          // Finished: enter completion pause
           isCompletedPauseRef.current = true;
           pauseTimerRef.current = setTimeout(() => {
             isCompletedPauseRef.current = false;
@@ -286,8 +314,60 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
           }, 1800);
         }
 
+        // Draw red brush tip marker at the tip of writing
+        if (isBrushActive && isPlaying && !isCompletedPauseRef.current) {
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(brushX, brushY, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
       } else {
-        // --- Fallback Procedural sweep for characters without vector coordinates ---
+        // --- 2. Fallback (Myeongjo Font Mask & Sweep animation) ---
+        if (isCompletedPauseRef.current) {
+          ctx.save();
+          ctx.font = fontStr;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#1e293b';
+          ctx.fillText(currentHanja.char, textX, textY);
+          ctx.restore();
+
+          if (isPlaying) {
+            animationFrameRef.current = requestAnimationFrame(animate);
+          }
+          return;
+        }
+
+        // Light guide
+        ctx.save();
+        ctx.font = fontStr;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(226, 232, 240, 0.55)';
+        ctx.fillText(currentHanja.char, textX, textY);
+        ctx.restore();
+
+        const offscreen = document.createElement('canvas');
+        offscreen.width = canvasSize;
+        offscreen.height = canvasSize;
+        const oCtx = offscreen.getContext('2d');
+
+        oCtx.font = fontStr;
+        oCtx.textAlign = 'center';
+        oCtx.textBaseline = 'middle';
+        oCtx.fillStyle = '#1e293b';
+        oCtx.fillText(currentHanja.char, textX, textY);
+
+        const strokesCanvas = document.createElement('canvas');
+        strokesCanvas.width = canvasSize;
+        strokesCanvas.height = canvasSize;
+        const sCtx = strokesCanvas.getContext('2d');
+
+        let brushX = 0;
+        let brushY = 0;
+        let isBrushActive = false;
+
         const sweepProgress = strokeProgressRef.current;
         
         if (sweepProgress >= 1.0) {
@@ -298,8 +378,6 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
           }, 1800);
         } else {
           const sweepRadius = sweepProgress * (canvasSize * 1.5);
-          
-          // Draw expanding gradient circle from top-left (0,0) on strokesCanvas
           const gradient = sCtx.createRadialGradient(0, 0, 0, 0, 0, sweepRadius);
           gradient.addColorStop(0, '#1e293b');
           gradient.addColorStop(0.9, '#334155');
@@ -307,27 +385,22 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
           sCtx.fillStyle = gradient;
           sCtx.fillRect(0, 0, canvasSize, canvasSize);
           
-          // Animate a brush cursor tracing the character bounds as it sweeps
           brushX = canvasSize / 4 + (canvasSize / 2) * sweepProgress + Math.sin(sweepProgress * Math.PI * 4) * 30;
           brushY = canvasSize / 4 + (canvasSize / 2) * sweepProgress + Math.cos(sweepProgress * Math.PI * 4) * 20;
           isBrushActive = true;
           strokeProgressRef.current += 0.008 * speed;
         }
-      }
 
-      // 3. Clip the combined drawn strokes (source) onto the text mask (destination)
-      oCtx.globalCompositeOperation = 'source-in';
-      oCtx.drawImage(strokesCanvas, 0, 0);
+        oCtx.globalCompositeOperation = 'source-in';
+        oCtx.drawImage(strokesCanvas, 0, 0);
+        ctx.drawImage(offscreen, 0, 0);
 
-      // Draw the masked offscreen canvas onto primary canvas
-      ctx.drawImage(offscreen, 0, 0);
-
-      // Draw red brush tip on top (not masked!)
-      if (isBrushActive && isPlaying) {
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(brushX, brushY, 6, 0, Math.PI * 2);
-        ctx.fill();
+        if (isBrushActive && isPlaying && !isCompletedPauseRef.current) {
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(brushX, brushY, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
       if (isPlaying) {
@@ -341,7 +414,7 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
     };
-  }, [currentIndex, hasStarted, isPlaying, speed]);
+  }, [currentIndex, hasStarted, isPlaying, speed, strokeData]);
 
   const handleRestartAnim = () => {
     if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
@@ -545,25 +618,41 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
             style={{ display: 'block' }}
           />
           
-          {/* Optional Indicator for Fallback sweeper */}
-          {!STROKE_COORDINATES[currentHanja.char] && (
+          {/* Loading overlay */}
+          {isLoadingStrokes && (
             <div style={{
               position: 'absolute',
-              top: '8px',
-              right: '8px',
+              inset: 0,
+              backgroundColor: 'rgba(248, 250, 252, 0.85)',
               display: 'flex',
               alignItems: 'center',
-              gap: '4px',
-              background: 'rgba(241,245,249,0.9)',
-              padding: '3px 8px',
-              borderRadius: '12px',
-              fontSize: '0.7rem',
-              color: 'var(--color-text-muted)',
-              border: '1px solid #e2e8f0'
+              justifyContent: 'center',
+              fontSize: '0.85rem',
+              color: 'var(--color-primary)',
+              fontWeight: 'bold'
             }}>
-              <Eye size={10} /> 전체 획순 시뮬레이션
+              획순 데이터 로딩 중...
             </div>
           )}
+
+          {/* Indicator */}
+          <div style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            background: 'rgba(255, 255, 255, 0.9)',
+            padding: '3px 8px',
+            borderRadius: '12px',
+            fontSize: '0.7rem',
+            color: strokeData ? 'var(--color-primary)' : 'var(--color-text-muted)',
+            border: '1px solid #e2e8f0',
+            fontWeight: 'bold'
+          }}>
+            <Eye size={10} /> {strokeData ? '획순 벡터 애니메이션' : '서체 시뮬레이션'}
+          </div>
         </div>
 
         {/* Meaning & Sound Display Below Canvas */}
