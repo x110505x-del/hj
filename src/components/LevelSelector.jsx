@@ -39,7 +39,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           WebkitTextFillColor: 'transparent',
           textShadow: '0 4px 10px rgba(16, 185, 129, 0.1)'
         }}>
-          한자 검정 능력시험 도전하기
+          한자 마스터<br/>너도 할수 있어!
         </h1>
         <p style={{
           fontSize: '1rem',
