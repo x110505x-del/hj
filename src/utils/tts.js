@@ -78,10 +78,10 @@ export const unlockTtsAudio = () => {
   }
 };
 
-const playFallbackAudio = (text, rate, onEnd, onError) => {
+const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
   if (typeof window === 'undefined') return;
   const cleanText = text.trim();
-  console.log(`TTS Fallback: Playing audio for "${cleanText}"`);
+  console.log(`TTS Fallback: Playing audio for "${cleanText}" (VoiceType: ${voiceType})`);
 
   // 1. Pause any currently playing audio
   if (currentPlayingAudio) {
@@ -117,7 +117,20 @@ const playFallbackAudio = (text, rate, onEnd, onError) => {
   currentPlayingAudio = activeAudio;
 
   try {
-    activeAudio.playbackRate = rate;
+    // Configure pitch shifting or speed changes based on voiceType
+    if (voiceType === 'child') {
+      activeAudio.preservesPitch = false;
+      activeAudio.webkitPreservesPitch = false;
+      activeAudio.playbackRate = 1.35;
+    } else if (voiceType === 'male') {
+      activeAudio.preservesPitch = false;
+      activeAudio.webkitPreservesPitch = false;
+      activeAudio.playbackRate = 0.82;
+    } else {
+      activeAudio.preservesPitch = true;
+      activeAudio.webkitPreservesPitch = true;
+      activeAudio.playbackRate = rate;
+    }
 
     // Attach callbacks
     activeAudio.onended = () => {
@@ -137,7 +150,20 @@ const playFallbackAudio = (text, rate, onEnd, onError) => {
         console.log(`TTS Fallback: Trying secondary fallback voice for "${cleanText}"...`);
         const secAudio = cached.secondary;
         currentPlayingAudio = secAudio;
-        secAudio.playbackRate = rate;
+        
+        if (voiceType === 'child') {
+          secAudio.preservesPitch = false;
+          secAudio.webkitPreservesPitch = false;
+          secAudio.playbackRate = 1.35;
+        } else if (voiceType === 'male') {
+          secAudio.preservesPitch = false;
+          secAudio.webkitPreservesPitch = false;
+          secAudio.playbackRate = 0.82;
+        } else {
+          secAudio.preservesPitch = true;
+          secAudio.webkitPreservesPitch = true;
+          secAudio.playbackRate = rate;
+        }
 
         secAudio.onended = () => {
           console.log(`TTS Fallback: Secondary Audio ended for "${cleanText}"`);
@@ -192,7 +218,7 @@ export const speakKorean = (text, options = {}) => {
   if (typeof window === 'undefined') return;
 
   const {
-    gender = 'female',
+    voiceType = 'female', // 'female' | 'male' | 'child'
     rate = 0.95,
     pitch = null,
     onEnd = null,
@@ -210,7 +236,7 @@ export const speakKorean = (text, options = {}) => {
     finalSpeechText = `${cleaned}, ${cleaned}.`;
   }
 
-  console.log("TTS: Attempting to speak:", finalSpeechText);
+  console.log("TTS: Attempting to speak:", finalSpeechText, "using VoiceType:", voiceType);
 
   // Stop any active HTML5 audio fallback
   if (currentPlayingAudio) {
@@ -249,7 +275,6 @@ export const speakKorean = (text, options = {}) => {
       // Create utterance with explicit ko-KR language tag
       const utterance = new SpeechSynthesisUtterance(finalSpeechText);
       utterance.lang = 'ko-KR';
-      utterance.rate = rate;
 
       // Find and set voice if available
       const voices = window.speechSynthesis.getVoices() || [];
@@ -263,16 +288,17 @@ export const speakKorean = (text, options = {}) => {
           const name = voice.name.toLowerCase();
           let score = 0;
 
-          // Gender Matching
+          // Gender/VoiceType Matching
           const isFemaleVoice = name.includes('yuna') || name.includes('sora') || name.includes('yuri') || name.includes('heami') || name.includes('female') || name.includes('siri') && !name.includes('male');
           const isMaleVoice = name.includes('minsu') || name.includes('sejun') || name.includes('male') || name.includes('seung-woo');
 
-          if (gender === 'female') {
-            if (isFemaleVoice) score += 100;
-            else if (isMaleVoice) score -= 100;
-          } else {
+          if (voiceType === 'male') {
             if (isMaleVoice) score += 100;
             else if (isFemaleVoice) score -= 100;
+          } else {
+            // For both female and child, we prefer female voices as child voices are high-pitched
+            if (isFemaleVoice) score += 100;
+            else if (isMaleVoice) score -= 100;
           }
 
           // Quality indicators
@@ -314,11 +340,21 @@ export const speakKorean = (text, options = {}) => {
         }
       }
 
-      // Set pitch (pitch === null uses defaults)
+      // Set pitch and rate based on voiceType (pitch === null uses defaults)
       if (pitch !== null) {
         utterance.pitch = pitch;
+        utterance.rate = rate;
       } else {
-        utterance.pitch = gender === 'female' ? 1.05 : 0.85; // Normal natural pitches
+        if (voiceType === 'child') {
+          utterance.pitch = 1.45;
+          utterance.rate = 1.05 * rate;
+        } else if (voiceType === 'male') {
+          utterance.pitch = 0.8;
+          utterance.rate = rate;
+        } else {
+          utterance.pitch = 1.05;
+          utterance.rate = rate;
+        }
       }
 
       // Reference preservation to bypass the Chrome GC bug
@@ -344,7 +380,7 @@ export const speakKorean = (text, options = {}) => {
         console.error(`TTS Local Error: Utterance onError fired. Error: ${e.error || 'unknown'}`, e);
         cleanup();
         // Fallback to cloud audio if local speech synthesis fails
-        playFallbackAudio(finalSpeechText, rate, onEnd, onError);
+        playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, onError);
       };
 
       // Speak
@@ -359,13 +395,13 @@ export const speakKorean = (text, options = {}) => {
         if (!hasStarted) {
           console.warn("TTS Local Warning: Local speech engine hanging! Falling back to Audio API.");
           window.speechSynthesis.cancel();
-          playFallbackAudio(finalSpeechText, rate, onEnd, onError);
+          playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, onError);
         }
       }, 3000);
 
     } catch (err) {
       console.error("TTS Local Error: Speech synthesis failed with exception:", err);
-      playFallbackAudio(finalSpeechText, rate, onEnd, onError);
+      playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, onError);
     }
   };
 
@@ -373,7 +409,7 @@ export const speakKorean = (text, options = {}) => {
     // If online, prioritize premium cloud-based neural voice (Google/Youdao)
     if (useCloudTts && typeof navigator !== 'undefined' && navigator.onLine) {
       console.log("TTS: Using premium Cloud TTS for natural voice.");
-      playFallbackAudio(finalSpeechText, rate, onEnd, (err) => {
+      playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, (err) => {
         console.warn("TTS: Cloud TTS failed. Falling back to local SpeechSynthesis:", err);
         runLocalSpeechSynthesis();
       });
