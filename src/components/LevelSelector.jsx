@@ -252,7 +252,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           </div>
           <div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: '#1f2937', fontWeight: 'bold' }}>
-              한자 비 내리기 게임 (산성비)
+              한자비 맞추기 게임
             </h3>
             <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
               하늘에서 내리는 한자 비! 바닥에 닿기 전에 올바른 하단 뜻카드를 클릭하여 한자를 터뜨리세요.

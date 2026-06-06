@@ -414,7 +414,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
       }}>
         <div>
           <h2 style={{ fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '12px', fontWeight: 'bold' }}>
-            산성비 게임
+            한자비 맞추기 게임
           </h2>
           <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
             위에서 떨어지는 한자가 바닥에 닿기 전에 하단에서 올바른 뜻과 음을 찾아 클릭하세요!<br/>
