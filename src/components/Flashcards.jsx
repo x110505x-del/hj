@@ -9,7 +9,6 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false); // For review/test phase
-  const [voiceType, setVoiceType] = useState('female'); // 'female' | 'male' | 'child'
 
   const currentHanja = shuffledList[currentIndex];
 
@@ -49,7 +48,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
       }
 
       speakKorean(text, {
-        voiceType: voiceType,
+        gender: 'female',
         rate: 0.95,
         repeatTwice: true, // Learn mode repeats twice
         skipCancel: immediate === true,
@@ -112,7 +111,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
       }
 
       speakKorean(text, {
-        voiceType: voiceType,
+        gender: 'female',
         rate: 0.95,
         repeatTwice: false, // Review mode reads only once!
         onEnd: () => {
@@ -168,7 +167,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
       setShowAnswer(true);
       clearAllTimers();
       speakKorean(`${currentHanja.meaning}, ${currentHanja.sound}`, {
-        voiceType: voiceType,
+        gender: 'female',
         rate: 0.95,
         repeatTwice: false,
         skipCancel: true
@@ -177,7 +176,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
     }
 
     speakKorean(`${currentHanja.meaning}, ${currentHanja.sound}`, {
-      voiceType: voiceType,
+      gender: 'female',
       rate: 0.95,
       repeatTwice: true,
       skipCancel: true
@@ -309,7 +308,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
         </button>
 
         {/* TTS/Sound Toggle Button on Start Screen */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', marginTop: '10px' }}>
+        <div style={{ marginTop: '10px' }}>
           <button
             onClick={onToggleSound}
             style={{
@@ -340,37 +339,6 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
               </>
             )}
           </button>
-
-          {/* Voice Selection Button Group */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>🗣️ 학습 목소리 선택</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {[
-                { id: 'female', label: '👩 여성 목소리' },
-                { id: 'male', label: '👨 남성 목소리' },
-                { id: 'child', label: '👶 어린이 목소리' }
-              ].map(voice => (
-                <button
-                  key={voice.id}
-                  onClick={() => setVoiceType(voice.id)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '16px',
-                    border: voiceType === voice.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    backgroundColor: voiceType === voice.id ? 'rgba(16, 185, 129, 0.08)' : '#ffffff',
-                    color: voiceType === voice.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                    fontWeight: 'bold',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    boxShadow: 'var(--shadow-sm)',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  {voice.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <button onClick={onBack} className="theme-btn" style={{ marginTop: '15px', fontSize: '0.95rem' }}>
@@ -735,48 +703,6 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
         >
           <ChevronRight size={24} />
         </button>
-      </div>
-
-      {/* Voice Selection Button Group during gameplay */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', marginTop: '4px' }}>
-        <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>🗣️ 목소리 타입</span>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {[
-            { id: 'female', label: '👩 여성' },
-            { id: 'male', label: '👨 남성' },
-            { id: 'child', label: '👶 어린이' }
-          ].map(voice => (
-            <button
-              key={voice.id}
-              onClick={() => {
-                setVoiceType(voice.id);
-                // Replay active card with the newly selected voice profile immediately if sound is active
-                if (soundOn && currentHanja) {
-                  speakKorean(`${currentHanja.meaning}, ${currentHanja.sound}`, {
-                    voiceType: voice.id,
-                    rate: 0.95,
-                    repeatTwice: false,
-                    skipCancel: true
-                  });
-                }
-              }}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '16px',
-                border: voiceType === voice.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                backgroundColor: voiceType === voice.id ? 'rgba(16, 185, 129, 0.08)' : '#ffffff',
-                color: voiceType === voice.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                fontWeight: 'bold',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-                boxShadow: 'var(--shadow-sm)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              {voice.label}
-            </button>
-          ))}
-        </div>
       </div>
 
     </div>
