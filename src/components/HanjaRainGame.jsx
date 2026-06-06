@@ -787,52 +787,54 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
       </div>
 
       {/* Bottom Option Grid: 10 dynamic cards */}
-      <div className="rain-game-bottom-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(5, 1fr)',
-        gap: '8px',
-        padding: '4px 0',
-        height: '96px',
-        boxSizing: 'border-box'
-      }}>
-        {bottomCards.map((card) => {
-          const isHighlighted = highlightedId === card.id;
+      {gameState === 'playing' && (
+        <div className="rain-game-bottom-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, 1fr)',
+          gap: '8px',
+          padding: '4px 0',
+          height: '96px',
+          boxSizing: 'border-box'
+        }}>
+          {bottomCards.map((card) => {
+            const isHighlighted = highlightedId === card.id;
 
-          return (
-            <button
-              key={card.id}
-              disabled={gameState !== 'playing'}
-              onClick={() => handleCardClick(card)}
-              className="rain-game-bottom-card"
-              style={{
-                padding: '10px 4px',
-                fontSize: '0.9rem',
-                fontWeight: 'bold',
-                borderRadius: '8px',
-                backgroundColor: isHighlighted ? '#fca5a5' : '#ffffff',
-                border: isHighlighted ? '2px solid #ef4444' : '2px solid var(--color-border)',
-                boxShadow: 'var(--shadow-sm)',
-                color: 'var(--color-primary)',
-                cursor: 'pointer',
-                textAlign: 'center',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                transition: 'all 0.15s ease',
-                animation: isHighlighted ? 'shake 0.2s ease-in-out' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px'
-              }}
-              title={card.fullMeaning}
-            >
-              <span style={{ color: '#1f2937' }}>{card.meaning}</span>
-              <span style={{ color: 'var(--color-accent)' }}>{card.sound}</span>
-            </button>
-          );
-        })}
-      </div>
+            return (
+              <button
+                key={card.id}
+                disabled={gameState !== 'playing'}
+                onClick={() => handleCardClick(card)}
+                className="rain-game-bottom-card"
+                style={{
+                  padding: '10px 4px',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                  borderRadius: '8px',
+                  backgroundColor: isHighlighted ? '#fca5a5' : '#ffffff',
+                  border: isHighlighted ? '2px solid #ef4444' : '2px solid var(--color-border)',
+                  boxShadow: 'var(--shadow-sm)',
+                  color: 'var(--color-primary)',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  transition: 'all 0.15s ease',
+                  animation: isHighlighted ? 'shake 0.2s ease-in-out' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px'
+                }}
+                title={card.fullMeaning}
+              >
+                <span style={{ color: '#1f2937' }}>{card.meaning}</span>
+                <span style={{ color: 'var(--color-accent)' }}>{card.sound}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
     </div>
   );
