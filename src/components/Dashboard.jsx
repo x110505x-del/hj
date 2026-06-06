@@ -92,7 +92,7 @@ export default function Dashboard({ profile, onUpdateProfile, onNavigate }) {
                 📊 나의 학습 집중 대시보드
               </h3>
               
-              <div style={{
+              <div className="dashboard-stats-grid" style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
                 gap: '16px',

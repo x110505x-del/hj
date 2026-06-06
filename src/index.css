@@ -454,11 +454,23 @@ body {
 /* Extra Small Phones (iPhones, Android screens) */
 @media (max-width: 480px) {
   .level-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
   }
   
+  .level-grid button {
+    font-size: 0.78rem !important;
+    padding: 6px 0 !important;
+  }
+
   .rain-game-bottom-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    height: auto !important;
+  }
+  
+  .rain-game-bottom-card {
+    font-size: 0.72rem !important;
+    padding: 6px 1px !important;
   }
 
   .nav-right {
@@ -466,6 +478,33 @@ body {
     gap: 6px !important;
   }
   
+  /* Compact navbar headers on iPhones */
+  .glass-navbar {
+    padding: 6px 0 !important;
+  }
+  
+  .navbar-content {
+    gap: 6px !important;
+  }
+  
+  .nav-links {
+    gap: 2px !important;
+  }
+  
+  .nav-link {
+    padding: 5px 8px !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .navbar-stats {
+    padding: 3px 6px !important;
+    gap: 6px !important;
+  }
+  
+  .navbar-stats span {
+    font-size: 0.75rem !important;
+  }
+
   /* Make sure writing canvas is responsive and fits */
   .canvas-container {
     max-width: 285px !important;
@@ -477,6 +516,28 @@ body {
     margin: 8px auto !important;
     padding: 0 10px !important;
   }
+  
+  /* Compact cards for iPhones to prevent screen overflow */
+  .glass-card {
+    padding: 14px 16px !important;
+  }
+  
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  
+  /* Allow flashcard wrapper to scale down its height */
+  .flashcards-container {
+    min-height: 480px !important;
+    margin: 10px auto !important;
+    padding: 12px !important;
+  }
+  
+  .flip-card-container {
+    height: 260px !important;
+  }
 }
+
 
 

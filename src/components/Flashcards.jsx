@@ -255,10 +255,9 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
     );
   }
 
-  // start screen (Phase 1)
   if (learningPhase === 'start') {
     return (
-      <div style={{
+      <div className="flashcards-container" style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

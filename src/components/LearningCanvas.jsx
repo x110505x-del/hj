@@ -178,13 +178,13 @@ export default function LearningCanvas({ profile, onUpdateProfile, onNavigate })
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     
-    // Support touch events
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    // Support touch/mouse coordinates scaling for exact responsiveness on iPhones/tablets
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
     
     return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
+      x: ((clientX - rect.left) / rect.width) * canvas.width,
+      y: ((clientY - rect.top) / rect.height) * canvas.height
     };
   };
 
