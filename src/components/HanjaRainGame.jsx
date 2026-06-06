@@ -163,9 +163,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
             return Math.max(0, nextLives);
           });
           setCombo(0);
-          if (soundOn) {
-            speakKorean("놓쳤습니다", { rate: 1.3 });
-          }
+          playMissSound();
           return remaining;
         }
 
@@ -195,58 +193,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
     };
   }, [gameState, soundOn]);
 
-  // Keep the 10 bottom buttons updated so that the matching buttons for any visible falling Hanja are always available
-  useEffect(() => {
-    if (gameState !== 'playing' || fallingHanja.length === 0) return;
 
-    const activeIds = new Set(fallingHanja.map(item => item.id));
-    
-    setBottomCards((prev) => {
-      const currentIds = new Set(prev.map(c => c.id));
-      const missingIds = [...activeIds].filter(id => !currentIds.has(id));
-      
-      if (missingIds.length === 0) {
-        return prev;
-      }
-
-      let updated = [...prev];
-      let missingIndex = 0;
-
-      // Try to replace cards that are NOT currently active
-      for (let i = 0; i < updated.length; i++) {
-        if (missingIndex >= missingIds.length) break;
-        
-        const card = updated[i];
-        if (!activeIds.has(card.id)) {
-          const newCard = allHanja.find(h => h.id === missingIds[missingIndex]);
-          if (newCard) {
-            updated[i] = newCard;
-            missingIndex++;
-          }
-        }
-      }
-
-      // Append any remaining missing cards that couldn't be swapped (rare)
-      while (missingIndex < missingIds.length) {
-        const newCard = allHanja.find(h => h.id === missingIds[missingIndex]);
-        if (newCard) {
-          updated.push(newCard);
-        }
-        missingIndex++;
-      }
-
-      // Pad or trim to exactly 10 cards
-      if (updated.length > 10) {
-        updated = updated.slice(0, 10);
-      } else if (updated.length < 10) {
-        const remainingPool = allHanja.filter(h => !updated.some(u => u.id === h.id));
-        const itemsToAdd = remainingPool.sort(() => 0.5 - Math.random()).slice(0, 10 - updated.length);
-        updated = [...updated, ...itemsToAdd];
-      }
-
-      return updated;
-    });
-  }, [fallingHanja, gameState, allHanja]);
 
   const startGame = () => {
     if (allHanja.length === 0) return;
@@ -315,7 +262,20 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
       speed: finalSpeed
     };
 
-    setFallingHanja((prev) => [...prev, newFalling]);
+    setFallingHanja((prev) => {
+      const nextFalling = [...prev, newFalling];
+      
+      // Shuffle bottom cards immediately with the new falling Hanja!
+      const activeIds = new Set(nextFalling.map(item => item.id));
+      let newBottom = allHanja.filter(h => activeIds.has(h.id));
+      const distractorPool = allHanja.filter(h => !activeIds.has(h.id));
+      const needed = Math.max(0, 10 - newBottom.length);
+      const distractors = distractorPool.sort(() => 0.5 - Math.random()).slice(0, needed);
+      const combined = [...newBottom, ...distractors].sort(() => 0.5 - Math.random());
+      setBottomCards(combined);
+
+      return nextFalling;
+    });
   };
 
   const createExplosion = (xPercent, yPercent, color) => {
@@ -357,6 +317,27 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
     }
   };
 
+  const playMissSound = () => {
+    if (!soundOn) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(60, now + 0.3);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } catch (e) {
+      console.warn("Miss sound failed", e);
+    }
+  };
+
   const handleCardClick = (card) => {
     if (gameState !== 'playing') return;
 
@@ -387,10 +368,6 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
       if (newCombo > maxCombo) setMaxCombo(newCombo);
 
       createExplosion(target.x, target.y, 'var(--color-accent)');
-
-      if (soundOn) {
-        speakKorean(target.char, { rate: 1.4 });
-      }
     } else {
       setCombo(0);
       setHighlightedId(card.id);
@@ -580,26 +557,41 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
       >
         {gameState === 'playing' ? (
           <>
+            <style>{`
+              @keyframes danger-blink {
+                0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                50% { opacity: 0.25; transform: translate(-50%, -50%) scale(1.15); }
+                100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+              }
+            `}</style>
+
             {/* Falling Hanja Elements */}
-            {fallingHanja.map((item) => (
-              <div
-                key={item.uid}
-                style={{
-                  position: 'absolute',
-                  left: `${item.x}%`,
-                  top: `${item.y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  fontSize: '2.8rem',
-                  fontWeight: 'bold',
-                  fontFamily: 'serif',
-                  color: 'var(--color-primary)',
-                  textShadow: '0 2px 6px rgba(16, 185, 129, 0.15)',
-                  pointerEvents: 'none'
-                }}
-              >
-                {item.char}
-              </div>
-            ))}
+            {fallingHanja.map((item) => {
+              const isNearBottom = item.y >= 55;
+              return (
+                <div
+                  key={item.uid}
+                  style={{
+                    position: 'absolute',
+                    left: `${item.x}%`,
+                    top: `${item.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                    fontSize: '2.8rem',
+                    fontWeight: 'bold',
+                    fontFamily: 'serif',
+                    color: isNearBottom ? '#ef4444' : 'var(--color-primary)',
+                    textShadow: isNearBottom 
+                      ? '0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.4)' 
+                      : '0 2px 6px rgba(16, 185, 129, 0.15)',
+                    pointerEvents: 'none',
+                    animation: isNearBottom ? 'danger-blink 0.35s infinite alternate ease-in-out' : 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {item.char}
+                </div>
+              );
+            })}
 
             {/* Explosion Particles */}
             {particles.map((p) => (
