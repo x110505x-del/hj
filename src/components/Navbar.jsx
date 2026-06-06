@@ -81,16 +81,27 @@ export default function Navbar({ profile, onUpdateProfile, currentScreen, onNavi
             />
           </svg>
 
-          <h1 className="font-display" style={{
-            fontSize: '1.3rem',
-            margin: 0,
-            fontWeight: 'bold',
-            background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>
-            한자 마스터
-          </h1>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.1' }}>
+            <h1 className="font-display" style={{
+              fontSize: '1.25rem',
+              margin: 0,
+              fontWeight: 'bold',
+              background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              한자 마스터
+            </h1>
+            <span style={{
+              fontSize: '0.62rem',
+              color: 'var(--color-text-muted)',
+              fontWeight: 'normal',
+              marginTop: '2px',
+              letterSpacing: '-0.3px'
+            }}>
+              (한자 검정 능력시험에 도전하세요!)
+            </span>
+          </div>
         </div>
 
         {/* Middle Area: Navigation links */}
