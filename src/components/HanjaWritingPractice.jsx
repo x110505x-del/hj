@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ArrowLeft, Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Volume2, VolumeX, Eye } from 'lucide-react';
 import { getHanjaByLevel } from '../services/hanjaDb';
 import { speakKorean, unlockTtsAudio } from '../utils/tts';
@@ -80,11 +80,26 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
   
   const [strokeData, setStrokeData] = useState(null);
   const [isLoadingStrokes, setIsLoadingStrokes] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const canvasSize = 260;
   const currentHanja = allHanja[currentIndex];
 
   const initialSpeakTriggeredRef = useRef(false);
+
+  // Filter Hanja by search query (Korean sound matching)
+  const filteredHanja = useMemo(() => {
+    if (!searchQuery.trim()) return allHanja;
+    const q = searchQuery.trim();
+    return allHanja.filter((hanja) => {
+      // Prioritize sound matching, but fallback to meaning/char
+      return (
+        hanja.sound.includes(q) || 
+        hanja.meaning.includes(q) ||
+        hanja.char.includes(q)
+      );
+    });
+  }, [allHanja, searchQuery]);
 
   // Fetch traditional character stroke vector data dynamically
   useEffect(() => {
@@ -482,6 +497,36 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
           </button>
         </div>
 
+        {/* Dynamic Search Bar (by Sound/Pronunciation) */}
+        <div style={{ width: '100%', maxWidth: '360px' }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="한글 음 검색 (예: 천, 가, 일)"
+            style={{
+              width: '100%',
+              padding: '10px 16px',
+              borderRadius: '24px',
+              border: '2.5px solid var(--color-border)',
+              outline: 'none',
+              fontSize: '0.95rem',
+              textAlign: 'center',
+              boxShadow: 'var(--shadow-sm)',
+              transition: 'all 0.2s',
+              backgroundColor: '#ffffff',
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = 'var(--color-primary)';
+              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.15)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = 'var(--color-border)';
+              e.target.style.boxShadow = 'var(--shadow-sm)';
+            }}
+          />
+        </div>
+
         {/* Grid Selection of Hanja */}
         <div style={{
           display: 'grid',
@@ -497,49 +542,58 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
           border: '1px solid var(--color-border)',
           scrollBehavior: 'smooth'
         }}>
-          {allHanja.map((hanja, idx) => (
-            <button
-              key={hanja.char}
-              onClick={() => {
-                unlockTtsAudio();
-                setCurrentIndex(idx);
-                initialSpeakTriggeredRef.current = true;
-                setHasStarted(true);
-                speakKorean(`${hanja.meaning} ${hanja.sound}`, {
-                  repeatTwice: true,
-                  skipCancel: true
-                });
-              }}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px 4px',
-                borderRadius: '8px',
-                border: '1px solid var(--color-border)',
-                backgroundColor: '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: 'var(--shadow-sm)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-primary)';
-                e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.04)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-border)';
-                e.currentTarget.style.backgroundColor = '#ffffff';
-              }}
-            >
-              <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', fontFamily: 'serif' }}>
-                {hanja.char}
-              </span>
-              <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>
-                {hanja.sound}
-              </span>
-            </button>
-          ))}
+          {filteredHanja.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', padding: '32px 16px', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+              검색된 한자가 없습니다.
+            </div>
+          ) : (
+            filteredHanja.map((hanja) => {
+              const origIdx = allHanja.findIndex((h) => h.char === hanja.char);
+              return (
+                <button
+                  key={hanja.char}
+                  onClick={() => {
+                    unlockTtsAudio();
+                    setCurrentIndex(origIdx !== -1 ? origIdx : 0);
+                    initialSpeakTriggeredRef.current = true;
+                    setHasStarted(true);
+                    speakKorean(`${hanja.meaning} ${hanja.sound}`, {
+                      repeatTwice: true,
+                      skipCancel: true
+                    });
+                  }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '8px 4px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--color-border)',
+                    backgroundColor: '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-primary)';
+                    e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.04)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-border)';
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                  }}
+                >
+                  <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937', fontFamily: 'serif' }}>
+                    {hanja.char}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>
+                    {hanja.sound}
+                  </span>
+                </button>
+              );
+            })
+          )}
         </div>
 
         <button onClick={onBack} className="theme-btn" style={{ marginTop: '10px', fontSize: '0.95rem', padding: '8px 24px' }}>
