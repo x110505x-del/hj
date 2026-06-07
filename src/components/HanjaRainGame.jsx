@@ -205,37 +205,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
     };
   }, [gameState, soundOn]);
 
-  // 5-Second Bottom Card Shuffling and Position Swapping
-  useEffect(() => {
-    if (gameState !== 'playing') {
-      if (shuffleTimerRef.current) {
-        clearInterval(shuffleTimerRef.current);
-        shuffleTimerRef.current = null;
-      }
-      return;
-    }
 
-    shuffleTimerRef.current = setInterval(() => {
-      setFallingHanja((currentFalling) => {
-        // Shuffle the bottom cards with active falling ones and fresh distractors
-        const activeIds = new Set(currentFalling.map(item => item.id));
-        let newBottom = allHanja.filter(h => activeIds.has(h.id));
-        const distractorPool = allHanja.filter(h => !activeIds.has(h.id));
-        const needed = Math.max(0, 10 - newBottom.length);
-        const distractors = distractorPool.sort(() => 0.5 - Math.random()).slice(0, needed);
-        const combined = [...newBottom, ...distractors].sort(() => 0.5 - Math.random());
-        setBottomCards(combined);
-        return currentFalling;
-      });
-    }, 5000);
-
-    return () => {
-      if (shuffleTimerRef.current) {
-        clearInterval(shuffleTimerRef.current);
-        shuffleTimerRef.current = null;
-      }
-    };
-  }, [gameState, allHanja]);
 
 
 
@@ -277,24 +247,28 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
     shuffleTimerRef.current = null;
   };
 
-  const ensureHanjaInBottomCards = (currentFalling) => {
+  const ensureHanjaInBottomCards = (currentFalling, shouldShuffle) => {
     setBottomCards((prevBottom) => {
       const activeIds = new Set(currentFalling.map(item => item.id));
       const missingIds = Array.from(activeIds).filter(id => !prevBottom.some(c => c.id === id));
       
-      if (missingIds.length === 0 && prevBottom.length === 10) {
+      if (missingIds.length === 0 && prevBottom.length === 10 && !shouldShuffle) {
         return prevBottom;
       }
       
       let newBottom = [...prevBottom];
+      
+      if (newBottom.length === 0) {
+        const initial = [...allHanja].sort(() => 0.5 - Math.random()).slice(0, 10);
+        return initial;
+      }
+
       for (const missingId of missingIds) {
         const indexToReplace = newBottom.findIndex(c => !activeIds.has(c.id));
         const missingCard = allHanja.find(h => h.id === missingId);
         
         if (indexToReplace !== -1 && missingCard) {
           newBottom[indexToReplace] = missingCard;
-        } else if (missingCard) {
-          newBottom.push(missingCard);
         }
       }
       
@@ -307,7 +281,11 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
         newBottom = [...newBottom, ...extra];
       }
       
-      return [...newBottom].sort(() => 0.5 - Math.random());
+      if (shouldShuffle) {
+        return [...newBottom].sort(() => 0.5 - Math.random());
+      }
+      
+      return newBottom;
     });
   };
 
@@ -330,6 +308,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
       finalSpeed *= 2.0;
     }
 
+    const currentSpawnNum = nextHanjaId.current + 1;
     const newFalling = {
       uid: nextHanjaId.current++,
       char: randomCard.char,
@@ -344,7 +323,8 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
 
     setFallingHanja((prev) => {
       const nextFalling = [...prev, newFalling];
-      ensureHanjaInBottomCards(nextFalling);
+      const shouldShuffle = currentSpawnNum % 3 === 0;
+      ensureHanjaInBottomCards(nextFalling, shouldShuffle);
       return nextFalling;
     });
   };
