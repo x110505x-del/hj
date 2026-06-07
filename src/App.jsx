@@ -87,7 +87,7 @@ export default function App() {
               marginTop: '2px',
               letterSpacing: '-0.3px'
             }}>
-              우리 한자검정능력시험 한번 도전?
+              "한자 검정 능력 시험에 도전 하세요!!"
             </span>
           </div>
         </div>
