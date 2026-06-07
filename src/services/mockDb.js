@@ -1,4 +1,5 @@
 // Mock Database Service for Hanja Master
+import { saveProfileToCloud } from './dbSync';
 
 // Joseon Dynasty Ranks based on XP
 export const RANKS = [
@@ -243,6 +244,11 @@ export const getProfile = () => {
 export const saveProfile = (profile) => {
   localStorage.setItem('hanja_profile', JSON.stringify(profile));
   window.dispatchEvent(new Event('profileUpdated'));
+  
+  // Asynchronously synchronize with the cloud database if logged in
+  if (profile && profile.isLoggedIn && profile.email) {
+    saveProfileToCloud(profile).catch(err => console.error('Cloud auto-sync error:', err));
+  }
 };
 
 // --- FEEDBACK DATABASE CONTROLLERS ---
