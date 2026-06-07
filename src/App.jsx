@@ -4,6 +4,7 @@ import Flashcards from './components/Flashcards';
 import SpeedQuiz from './components/SpeedQuiz';
 import HanjaRainGame from './components/HanjaRainGame';
 import HanjaWritingPractice from './components/HanjaWritingPractice';
+import FeedbackWidget from './components/FeedbackWidget';
 
 export default function App() {
   const [selectedLevel, setSelectedLevel] = useState('8급');
@@ -160,6 +161,9 @@ export default function App() {
       }}>
         &copy; 2026 한자 마스터. All Rights Reserved. | 어문회 급수별 스피드 & 낙하형 게임 수련장 🏆
       </footer>
+      
+      {/* Floating global feedback widget */}
+      <FeedbackWidget />
     </div>
   );
 }
