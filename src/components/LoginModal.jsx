@@ -103,7 +103,19 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
     setTimeout(() => {
       const randomId = Math.floor(1000 + Math.random() * 9000);
       const providerName = provider === 'google' ? '구글' : '카카오';
-      const nickname = `${providerName} 수련생 #${randomId}`;
+      
+      // Fun Korean nickname generator
+      const adjectives = [
+        '피곤한', '해피한', '도전하는', '똑똑한', '귀여운', '열정적인', '도도한', '배고픈', 
+        '신비로운', '용맹한', '지혜로운', '씩씩한', '졸린', '노래하는', '바쁜', '상큼한'
+      ];
+      const nouns = [
+        '아이돌', '뽀로로', '선비', '학자', '훈장님', '댕댕이', '냥이', '호랑이', 
+        '토끼', '세종대왕', '이순신', '람쥐', '팬더', '루피', '펭수', '어피치'
+      ];
+      const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+      const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+      const nickname = `${randomAdj} ${randomNoun}`;
 
       const updated = {
         ...profile,
@@ -115,7 +127,7 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
       };
 
       setSuccessMsg(`${providerName} 계정 연동 성공! 개인정보 미수집 프로필로 로그인되었습니다.`);
-      triggerTtsFeedback(`${providerName} 계정이 연동되었습니다. 반갑네 수련생!`);
+      triggerTtsFeedback(`${nickname}님, 계정이 연동되었습니다. 반갑네 수련생!`);
       onUpdateProfile(updated);
       setIsSubmitting(false);
 

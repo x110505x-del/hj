@@ -125,7 +125,7 @@ export default function App() {
           alignItems: 'center',
           gap: '12px'
         }}>
-          {profile && profile.isLoggedIn ? (
+          {profile && profile.isLoggedIn && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{
                 display: 'flex',
@@ -176,26 +176,6 @@ export default function App() {
                 로그아웃
               </button>
             </div>
-          ) : (
-            <button
-              onClick={() => setIsLoginOpen(true)}
-              style={{
-                background: 'var(--color-primary)',
-                border: 'none',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '0.8rem',
-                fontWeight: 'bold',
-                padding: '8px 14px',
-                borderRadius: '20px',
-                boxShadow: 'var(--shadow-sm)'
-              }}
-            >
-              로그인 / 회원가입
-            </button>
           )}
         </div>
       </header>
