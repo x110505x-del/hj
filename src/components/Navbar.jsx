@@ -99,7 +99,7 @@ export default function Navbar({ profile, onUpdateProfile, currentScreen, onNavi
               marginTop: '2px',
               letterSpacing: '-0.3px'
             }}>
-              (한자 검정 능력시험에 도전하세요!)
+              우리 한자검정능력시험 한번 도전?
             </span>
           </div>
         </div>
