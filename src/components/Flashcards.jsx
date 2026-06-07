@@ -15,7 +15,12 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
   const timer1Ref = useRef(null);
   const timerNextRef = useRef(null);
   const isSequenceCancelledRef = useRef(false);
-  const initialSpeakTriggeredRef = useRef(false);
+  const currentIndexRef = useRef(currentIndex);
+
+  // Keep currentIndexRef updated to prevent stale card race conditions
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
   const clearAllTimers = () => {
     if (timer1Ref.current) clearTimeout(timer1Ref.current);
@@ -36,11 +41,11 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
     const text = `${targetHanja.meaning}, ${targetHanja.sound}`;
 
     const run = () => {
-      if (isSequenceCancelledRef.current || isPaused) return;
+      if (index !== currentIndexRef.current || isSequenceCancelledRef.current || isPaused) return;
       if (!soundOn) {
         // If sound is off, wait 2.2 seconds and advance to simulate card timing
         timerNextRef.current = setTimeout(() => {
-          if (!isSequenceCancelledRef.current && !isPaused) {
+          if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
             advanceLearnCard();
           }
         }, 2200);
@@ -53,10 +58,10 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
         repeatTwice: true, // Learn mode repeats twice
         skipCancel: immediate === true,
         onEnd: () => {
-          if (!isSequenceCancelledRef.current && !isPaused) {
+          if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
             // Wait 1 second (1000ms) after speech ends before advancing to the next card
             timerNextRef.current = setTimeout(() => {
-              if (!isSequenceCancelledRef.current && !isPaused) {
+              if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
                 advanceLearnCard();
               }
             }, 1000);
@@ -64,9 +69,9 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
         },
         onError: (err) => {
           console.error("Flashcards: TTS speech execution error:", err);
-          if (!isSequenceCancelledRef.current && !isPaused) {
+          if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
             timerNextRef.current = setTimeout(() => {
-              if (!isSequenceCancelledRef.current && !isPaused) {
+              if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
                 advanceLearnCard();
               }
             }, 1000);
@@ -96,14 +101,14 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
 
     // Wait 3 seconds for user to guess the meaning and sound
     timer1Ref.current = setTimeout(() => {
-      if (isSequenceCancelledRef.current || isPaused) return;
+      if (index !== currentIndexRef.current || isSequenceCancelledRef.current || isPaused) return;
 
       setShowAnswer(true);
 
       if (!soundOn) {
         // If sound is off, wait 1.5 seconds and advance
         timerNextRef.current = setTimeout(() => {
-          if (!isSequenceCancelledRef.current && !isPaused) {
+          if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
             advanceReviewCard();
           }
         }, 1500);
@@ -115,10 +120,10 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
         rate: 0.95,
         repeatTwice: false, // Review mode reads only once!
         onEnd: () => {
-          if (!isSequenceCancelledRef.current && !isPaused) {
+          if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
             // Wait 1 second before advancing
             timerNextRef.current = setTimeout(() => {
-              if (!isSequenceCancelledRef.current && !isPaused) {
+              if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
                 advanceReviewCard();
               }
             }, 1000);
@@ -126,9 +131,9 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
         },
         onError: (err) => {
           console.error("Flashcards Review: TTS speech execution error:", err);
-          if (!isSequenceCancelledRef.current && !isPaused) {
+          if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
             timerNextRef.current = setTimeout(() => {
-              if (!isSequenceCancelledRef.current && !isPaused) {
+              if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
                 advanceReviewCard();
               }
             }, 1000);
@@ -139,7 +144,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
   };
 
   const advanceLearnCard = () => {
-    if (currentIndex < shuffledList.length - 1) {
+    if (currentIndexRef.current < shuffledList.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
       // Loop finished -> transition screen for the second loop (review/test)
@@ -150,7 +155,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
   };
 
   const advanceReviewCard = () => {
-    if (currentIndex < shuffledList.length - 1) {
+    if (currentIndexRef.current < shuffledList.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
       // Review loop finished -> complete screen
@@ -228,11 +233,6 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
       return;
     }
 
-    if (initialSpeakTriggeredRef.current) {
-      initialSpeakTriggeredRef.current = false;
-      return;
-    }
-
     if (learningPhase === 'learn') {
       playCardSequence(currentIndex, false);
     } else if (learningPhase === 'review') {
@@ -286,9 +286,8 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
             if (typeof window !== 'undefined') {
               unlockTtsAudio();
             }
-            initialSpeakTriggeredRef.current = true;
             setLearningPhase('learn');
-            playCardSequence(currentIndex, true);
+            setCurrentIndex(0);
           }}
           className="theme-btn theme-btn-primary" 
           style={{
@@ -390,11 +389,9 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
               if (typeof window !== 'undefined') {
                 unlockTtsAudio();
               }
-              initialSpeakTriggeredRef.current = true;
               setLearningPhase('review');
               setCurrentIndex(0);
               setShowAnswer(false);
-              playReviewSequence(0);
             }}
             className="theme-btn theme-btn-primary" 
             style={{
