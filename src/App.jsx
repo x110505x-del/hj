@@ -5,11 +5,35 @@ import SpeedQuiz from './components/SpeedQuiz';
 import HanjaRainGame from './components/HanjaRainGame';
 import HanjaWritingPractice from './components/HanjaWritingPractice';
 import FeedbackWidget from './components/FeedbackWidget';
+import LoginModal from './components/LoginModal';
+import { getProfile, saveProfile } from './services/mockDb';
+import { Volume2, VolumeX } from 'lucide-react';
 
 export default function App() {
   const [selectedLevel, setSelectedLevel] = useState('8급');
   const [currentScreen, setCurrentScreen] = useState('selector'); // 'selector' | 'flashcard' | 'speed_quiz' | 'rain_game' | 'writing_practice'
   const [soundOn, setSoundOn] = useState(true);
+  const [profile, setProfile] = useState(() => getProfile());
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+
+  const handleLogout = () => {
+    const updated = {
+      ...profile,
+      isLoggedIn: false,
+      email: '',
+      authProvider: '',
+      isPrivacyFirst: false
+    };
+    setProfile(updated);
+    saveProfile(updated);
+    
+    if (soundOn && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance("로그아웃 되었습니다.");
+      utterance.lang = 'ko-KR';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   // Scroll to top on screen change to ensure header is visible and content layout is clean
   useEffect(() => {
@@ -48,8 +72,10 @@ export default function App() {
         padding: '14px 20px',
         boxShadow: 'var(--shadow-sm)',
         display: 'flex',
-        justifyContent: currentScreen === 'selector' ? 'flex-start' : 'center',
-        alignItems: 'center'
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        boxSizing: 'border-box',
+        width: '100%'
       }}>
         <div 
           onClick={() => setCurrentScreen('selector')}
@@ -92,6 +118,86 @@ export default function App() {
             </span>
           </div>
         </div>
+
+        {/* Header Profile / Login Section */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          {profile && profile.isLoggedIn ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '0.8rem',
+                color: 'var(--color-primary)',
+                fontWeight: 'bold',
+                background: 'rgba(4, 120, 87, 0.08)',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                border: '1px solid rgba(4, 120, 87, 0.15)'
+              }}>
+                <span style={{ fontSize: '0.85rem' }}>👤</span>
+                <span>{profile.username}</span>
+                {profile.isPrivacyFirst && (
+                  <span style={{ 
+                    fontSize: '0.62rem', 
+                    color: '#166534', 
+                    background: '#d1fae5', 
+                    padding: '1px 5px', 
+                    borderRadius: '4px', 
+                    marginLeft: '4px',
+                    fontWeight: 'bold'
+                  }}>
+                    익명 🔒
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={handleLogout}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  padding: '6px 10px',
+                  borderRadius: '20px',
+                  backgroundColor: 'rgba(255,255,255,0.7)',
+                  border: '1px solid #fee2e2',
+                  fontWeight: 'bold'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                title="로그아웃"
+              >
+                로그아웃
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsLoginOpen(true)}
+              style={{
+                background: 'var(--color-primary)',
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.8rem',
+                fontWeight: 'bold',
+                padding: '8px 14px',
+                borderRadius: '20px',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              로그인 / 회원가입
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Main Container Area */}
@@ -110,6 +216,9 @@ export default function App() {
             onStartMode={setCurrentScreen}
             soundOn={soundOn}
             onToggleSound={handleToggleSound}
+            profile={profile}
+            onOpenLoginModal={() => setIsLoginOpen(true)}
+            onLogout={handleLogout}
           />
         )}
 
@@ -164,6 +273,18 @@ export default function App() {
       
       {/* Floating global feedback widget */}
       <FeedbackWidget />
+
+      {/* 🔐 Authentication Modal Overlay */}
+      {isLoginOpen && (
+        <LoginModal 
+          profile={profile} 
+          onUpdateProfile={(updated) => {
+            setProfile(updated);
+            saveProfile(updated);
+          }} 
+          onClose={() => setIsLoginOpen(false)} 
+        />
+      )}
     </div>
   );
 }

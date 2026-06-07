@@ -1,9 +1,9 @@
 import { Volume2, VolumeX, BookOpen, Clock, CloudRain, PenTool } from 'lucide-react';
 import { HANJA_LEVELS } from '../services/hanjaDb';
-
+import { getRankByXp } from '../services/mockDb';
 import { unlockTtsAudio } from '../utils/tts';
 
-export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMode, soundOn, onToggleSound }) {
+export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMode, soundOn, onToggleSound, profile, onOpenLoginModal, onLogout }) {
   const handleModeStart = (mode) => {
     // macOS Safari / Chrome 음성 자동재생 권한 획득을 위한 클릭 이벤트 동기화 처리
     if (typeof window !== 'undefined') {
@@ -48,6 +48,117 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
         }}>
           초등학생부터 성인까지, 게임으로 즐겁게 마스터하는 급수별 배정한자!
         </p>
+      </div>
+
+      {/* 🔐 Welcome & Authentication Panel */}
+      <div style={{
+        background: '#ffffff',
+        border: '1.5px solid var(--color-border)',
+        borderRadius: '16px',
+        padding: '20px',
+        boxShadow: 'var(--shadow-sm)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        alignItems: 'center',
+        textAlign: 'center',
+        boxSizing: 'border-box'
+      }}>
+        {!profile || !profile.isLoggedIn ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)' }}>
+              <span style={{ fontSize: '1.2rem' }}>🔒</span>
+              <strong style={{ fontSize: '0.95rem' }}>개인정보 미수집 프로필 연동</strong>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 6px 0', lineHeight: '1.4' }}>
+              현재 익명 상태로 수련 중입니다. <strong>구글 또는 카카오 계정을 연동</strong>하시면 개인정보 수집 없이 학습 데이터를 영구히 보존하고 기기 간 복구가 가능해집니다!
+            </p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+              <button
+                onClick={onOpenLoginModal}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 10px rgba(16, 185, 129, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                계정 연동하기 / 로그인
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary)' }}>
+              <span style={{ fontSize: '1.2rem' }}>✨</span>
+              <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                {profile.username} 님, 수련을 환영합니다!
+              </strong>
+            </div>
+            {profile.isPrivacyFirst ? (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: '#f0fdf4',
+                color: '#166534',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                border: '1.5px solid rgba(16, 185, 129, 0.2)'
+              }}>
+                <span>🛡️ 개인정보 미수집 프로필</span>
+                <span style={{ textTransform: 'capitalize', color: 'var(--color-primary)' }}>({profile.authProvider})</span>
+              </div>
+            ) : (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                backgroundColor: '#eff6ff',
+                color: '#1e40af',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                border: '1.5px solid rgba(59, 130, 246, 0.2)'
+              }}>
+                <span>📧 이메일 프로필</span>
+              </div>
+            )}
+            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>
+              연속 학습: <strong>{profile.streak}일</strong> | 골드: <strong>{profile.gold}G</strong> | 현재 등급: <strong>{getRankByXp(profile.xp).name}</strong>
+            </p>
+            <button
+              onClick={onLogout}
+              style={{
+                marginTop: '4px',
+                padding: '5px 12px',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff',
+                color: '#dc2626',
+                border: '1px solid #fee2e2',
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+            >
+              연동 해제 (로그아웃)
+            </button>
+          </>
+        )}
       </div>
 
       {/* Level Selection Control */}
