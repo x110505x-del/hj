@@ -60,7 +60,7 @@ export default function App() {
           }}
         >
           {/* Brand Logo */}
-          <svg width="28" height="28" viewBox="0 0 100 100" style={{ display: 'block' }}>
+          <svg width="32" height="32" viewBox="0 0 100 100" style={{ display: 'block' }}>
             <circle cx="50" cy="50" r="42" fill="rgba(16, 185, 129, 0.08)" stroke="var(--color-primary)" strokeWidth="6" />
             <rect x="25" y="25" width="50" height="50" rx="6" fill="none" stroke="var(--color-accent)" strokeWidth="4" strokeDasharray="3 3" />
             <path 
@@ -71,14 +71,25 @@ export default function App() {
               fill="none" 
             />
           </svg>
-          <span style={{
-            fontSize: '1.3rem',
-            fontWeight: 'bold',
-            color: 'var(--color-primary)',
-            letterSpacing: '-0.5px'
-          }}>
-            한자 마스터
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.1' }}>
+            <span style={{
+              fontSize: '1.3rem',
+              fontWeight: 'bold',
+              color: 'var(--color-primary)',
+              letterSpacing: '-0.5px'
+            }}>
+              한자 마스터
+            </span>
+            <span style={{
+              fontSize: '0.65rem',
+              color: 'var(--color-text-muted)',
+              fontWeight: 'normal',
+              marginTop: '2px',
+              letterSpacing: '-0.3px'
+            }}>
+              우리 한자검정능력시험 한번 도전?
+            </span>
+          </div>
         </div>
       </header>
 
