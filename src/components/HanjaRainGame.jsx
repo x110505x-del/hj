@@ -555,27 +555,42 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
     }}>
       
       {/* Top Header Row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        paddingBottom: '4px',
+        borderBottom: '1px solid var(--color-border)',
+        boxSizing: 'border-box'
+      }}>
         <button onClick={onBack} className="theme-btn" style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
+          gap: cols === 3 ? '4px' : '6px',
           background: 'none',
           border: 'none',
           color: 'var(--color-primary)',
           fontWeight: 'bold',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          fontSize: cols === 3 ? '0.85rem' : '0.95rem',
+          padding: '4px 0'
         }}>
-          <ArrowLeft size={16} /> 나가기
+          <ArrowLeft size={cols === 3 ? 15 : 18} /> 나가기
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', height: '30px' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: cols === 3 ? '8px' : '16px',
+          height: '30px'
+        }}>
           {/* Hearts Display */}
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: cols === 3 ? '2px' : '4px', alignItems: 'center' }}>
             {[...Array(3)].map((_, i) => (
               <Heart 
                 key={i} 
-                size={20} 
+                size={cols === 3 ? 15 : 20} 
                 fill={i < lives ? '#ef4444' : 'none'} 
                 color={i < lives ? '#ef4444' : '#d1d5db'} 
                 style={{ transition: 'transform 0.2s' }}
@@ -584,29 +599,40 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
           </div>
 
           {/* Combo Indicator */}
-          <div style={{ visibility: combo > 0 ? 'visible' : 'hidden', minWidth: '50px', display: 'inline-block' }}>
+          {combo > 0 && (
             <span style={{
               background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
               color: 'white',
-              padding: '2px 8px',
-              borderRadius: '12px',
+              padding: '1px 6px',
+              borderRadius: '10px',
               fontWeight: 'bold',
-              fontSize: '0.75rem',
+              fontSize: cols === 3 ? '0.68rem' : '0.75rem',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '2px'
+              gap: '1px'
             }}>
-              🔥 {combo}
+              🔥{combo}
             </span>
-          </div>
+          )}
 
-          {/* Progress and Score */}
-          <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>
-            진행: <strong style={{ color: 'var(--color-accent)' }}>{clearedCount}/{totalLevelCountRef.current}</strong>
+          {/* Progress Indicator */}
+          <span style={{
+            fontSize: cols === 3 ? '0.8rem' : '0.95rem',
+            fontWeight: 'bold',
+            color: 'var(--color-text-muted)',
+            whiteSpace: 'nowrap'
+          }}>
+            {cols === 3 ? '' : '진행: '}<strong style={{ color: 'var(--color-accent)' }}>{clearedCount}/{totalLevelCountRef.current}</strong>
           </span>
 
-          <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--color-text-muted)' }}>
-            점수: <strong style={{ color: 'var(--color-primary)' }}>{score}</strong>
+          {/* Score Indicator */}
+          <span style={{
+            fontSize: cols === 3 ? '0.8rem' : '0.95rem',
+            fontWeight: 'bold',
+            color: 'var(--color-text-muted)',
+            whiteSpace: 'nowrap'
+          }}>
+            {cols === 3 ? '' : '점수: '}<strong style={{ color: 'var(--color-primary)' }}>{score}P</strong>
           </span>
         </div>
       </div>
