@@ -542,5 +542,50 @@ body {
   }
 }
 
+/* Responsive adjustments for top header profile and footer */
+.footer-container {
+  text-align: center;
+  padding: 16px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+  background-color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .header-subcaption {
+    display: none !important;
+  }
+  .header-profile-row {
+    gap: 4px !important;
+  }
+  .header-profile-username {
+    font-size: 0.72rem !important;
+    padding: 4px 8px !important;
+    gap: 3px !important;
+  }
+  .header-profile-username .username-text {
+    max-width: 80px !important;
+    display: inline-block !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+  }
+  .header-profile-logout {
+    font-size: 0.7rem !important;
+    padding: 4px 8px !important;
+  }
+  .footer-container {
+    font-size: 0.72rem !important;
+    padding: 12px 8px !important;
+  }
+}
+
 
 

@@ -107,7 +107,7 @@ export default function App() {
             }}>
               한자 마스터
             </span>
-            <span style={{
+            <span className="header-subcaption" style={{
               fontSize: '0.65rem',
               color: 'var(--color-text-muted)',
               fontWeight: 'normal',
@@ -126,8 +126,8 @@ export default function App() {
           gap: '12px'
         }}>
           {profile && profile.isLoggedIn && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{
+            <div className="header-profile-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="header-profile-username" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '5px',
@@ -140,7 +140,7 @@ export default function App() {
                 border: '1px solid rgba(4, 120, 87, 0.15)'
               }}>
                 <span style={{ fontSize: '0.85rem' }}>👤</span>
-                <span>{profile.username}</span>
+                <span className="username-text">{profile.username}</span>
                 {profile.isPrivacyFirst && (
                   <span style={{ 
                     fontSize: '0.62rem', 
@@ -156,6 +156,7 @@ export default function App() {
                 )}
               </div>
               <button
+                className="header-profile-logout"
                 onClick={handleLogout}
                 style={{
                   background: 'none',
@@ -240,14 +241,7 @@ export default function App() {
       </main>
 
       {/* Footnote */}
-      <footer style={{
-        textAlign: 'center',
-        padding: '16px',
-        fontSize: '0.85rem',
-        color: 'var(--color-text-muted)',
-        borderTop: '1px solid var(--color-border)',
-        backgroundColor: '#ffffff'
-      }}>
+      <footer className="footer-container">
         &copy; 2026 한자 마스터. All Rights Reserved. | 급수별 한자 게임 수련장 🏆
       </footer>
       
