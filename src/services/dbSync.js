@@ -22,7 +22,7 @@ function obfuscateEmail(email) {
 }
 
 // Public anonymous KV storage bucket ID for Hanja Master
-const BUCKET_ID = 'hanjamaster_sync_v2';
+const BUCKET_ID = 'WPnA3ko81FraCfgWmNSzPM';
 const KV_BASE_URL = `https://kvdb.io/${BUCKET_ID}/`;
 
 /**
