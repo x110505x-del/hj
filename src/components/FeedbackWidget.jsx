@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, X, Send, CheckCircle2, AlertTriangle, Frown, Lightbulb } from 'lucide-react';
+import { MessageSquare, X, Send, CheckCircle2, AlertTriangle, Frown, Lightbulb, Bot } from 'lucide-react';
 
 export default function FeedbackWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -68,6 +68,50 @@ export default function FeedbackWidget() {
 
   return (
     <>
+      {/* "불편한 건 알려주세요!" Speech Bubble */}
+      {!isOpen && (
+        <div
+          className="feedback-speech-bubble"
+          style={{
+            position: 'fixed',
+            bottom: '31px',
+            right: '90px',
+            backgroundColor: '#ffffff',
+            color: '#1f2937',
+            padding: '8px 14px',
+            borderRadius: '16px',
+            boxShadow: '0 10px 20px -5px rgba(0, 0, 0, 0.1), 0 0 1px 1px rgba(0, 0, 0, 0.05)',
+            fontSize: '0.82rem',
+            fontWeight: 'bold',
+            zIndex: 9999,
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            border: '1px solid rgba(16, 185, 129, 0.15)',
+            animation: 'bubbleFloat 3s ease-in-out infinite'
+          }}
+        >
+          <span>불편한 건 알려주세요!</span>
+          <span style={{ fontSize: '1rem' }}>💬</span>
+          {/* Small Speech Bubble Tail */}
+          <div
+            style={{
+              position: 'absolute',
+              right: '-6px',
+              top: '50%',
+              transform: 'translateY(-50%) rotate(45deg)',
+              width: '10px',
+              height: '10px',
+              backgroundColor: '#ffffff',
+              borderRight: '1px solid rgba(16, 185, 129, 0.15)',
+              borderTop: '1px solid rgba(16, 185, 129, 0.15)'
+            }}
+          />
+        </div>
+      )}
+
       {/* Floating Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -94,7 +138,7 @@ export default function FeedbackWidget() {
         }}
         title="개발자에게 피드백 보내기"
       >
-        {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
+        {isOpen ? <X size={24} /> : <Bot size={24} />}
       </button>
 
       {/* Hover effect styling injected via style tag */}
@@ -381,7 +425,7 @@ export default function FeedbackWidget() {
         </div>
       </div>
 
-      {/* Global CSS for spin and fadeIn animations */}
+      {/* Global CSS for spin, fadeIn and bubbleFloat animations */}
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
@@ -389,6 +433,14 @@ export default function FeedbackWidget() {
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.98); }
           to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes bubbleFloat {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
         }
       `}</style>
     </>

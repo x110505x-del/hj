@@ -159,7 +159,7 @@ export default function App() {
         borderTop: '1px solid var(--color-border)',
         backgroundColor: '#ffffff'
       }}>
-        &copy; 2026 한자 마스터. All Rights Reserved. | 어문회 급수별 스피드 & 낙하형 게임 수련장 🏆
+        &copy; 2026 한자 마스터. All Rights Reserved. | 급수별 한자 게임 수련장 🏆
       </footer>
       
       {/* Floating global feedback widget */}
