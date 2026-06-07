@@ -119,66 +119,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Header Profile / Login Section */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px'
-        }}>
-          {profile && profile.isLoggedIn && (
-            <div className="header-profile-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div className="header-profile-username" style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                fontSize: '0.8rem',
-                color: 'var(--color-primary)',
-                fontWeight: 'bold',
-                background: 'rgba(4, 120, 87, 0.08)',
-                padding: '6px 12px',
-                borderRadius: '20px',
-                border: '1px solid rgba(4, 120, 87, 0.15)'
-              }}>
-                <span style={{ fontSize: '0.85rem' }}>👤</span>
-                <span className="username-text">{profile.username}</span>
-                {profile.isPrivacyFirst && (
-                  <span style={{ 
-                    fontSize: '0.62rem', 
-                    color: '#166534', 
-                    background: '#d1fae5', 
-                    padding: '1px 5px', 
-                    borderRadius: '4px', 
-                    marginLeft: '4px',
-                    fontWeight: 'bold'
-                  }}>
-                    익명 🔒
-                  </span>
-                )}
-              </div>
-              <button
-                className="header-profile-logout"
-                onClick={handleLogout}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#dc2626',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  padding: '6px 10px',
-                  borderRadius: '20px',
-                  backgroundColor: 'rgba(255,255,255,0.7)',
-                  border: '1px solid #fee2e2',
-                  fontWeight: 'bold'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
-                title="로그아웃"
-              >
-                로그아웃
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Header Profile / Login Section (Removed per user request) */}
       </header>
 
       {/* Main Container Area */}
