@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Award, Trophy, Users, RefreshCw, Loader2 } from 'lucide-react';
 import { fetchGlobalLeaderboard } from '../services/dbSync';
 
+// Simple hashing function to obfuscate the email address for privacy (matching dbSync.js)
+function obfuscateEmail(email) {
+  if (!email) return 'anon';
+  const cleanEmail = email.trim().toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < cleanEmail.length; i++) {
+    const char = cleanEmail.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return 'usr_' + Math.abs(hash);
+}
+
 export default function Leaderboard({ profile }) {
   const [boardData, setBoardData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -10,12 +23,20 @@ export default function Leaderboard({ profile }) {
     setIsLoading(true);
     try {
       const data = await fetchGlobalLeaderboard();
+      const myId = profile.isLoggedIn && profile.email ? obfuscateEmail(profile.email) : '';
+
       // Mark and override current user's entry with their latest local profile gold/xp
       let mapped = data.map(u => {
-        const isUser = profile.isLoggedIn && u.username === profile.username;
+        // Match by hashed email ID (which is persistent) or fallback to username
+        const isUser = profile.isLoggedIn && (
+          (u.id && u.id === myId) || 
+          (u.username === profile.username)
+        );
+
         if (isUser) {
           return {
             ...u,
+            username: profile.username, // Force latest nickname from local state
             gold: profile.gold,
             xp: profile.xp,
             isUser: true
@@ -26,6 +47,22 @@ export default function Leaderboard({ profile }) {
           isUser: false
         };
       });
+
+      // Filter out duplicate legacy entries of the same user if any existed under old matching rules
+      if (myId) {
+        const seenUsernames = new Set();
+        const seenIds = new Set();
+        mapped = mapped.filter(u => {
+          if (u.isUser) {
+            seenUsernames.add(u.username);
+            if (u.id) seenIds.add(u.id);
+            return true;
+          }
+          if (seenUsernames.has(u.username)) return false;
+          if (u.id && seenIds.has(u.id)) return false;
+          return true;
+        });
+      }
 
       // If the logged in user is not yet in the global leaderboard array from the server,
       // optimistically inject them so they see themselves instantly.
@@ -38,6 +75,7 @@ export default function Leaderboard({ profile }) {
         if (profile.xp >= 10000) rName = '대제학 (大提學)';
 
         mapped.push({
+          id: myId,
           username: profile.username,
           gold: profile.gold,
           xp: profile.xp,
@@ -60,7 +98,7 @@ export default function Leaderboard({ profile }) {
     // Refresh periodically
     const timer = setInterval(refreshData, 30000);
     return () => clearInterval(timer);
-  }, [profile.gold]);
+  }, [profile.gold, profile.username]);
 
   return (
     <div style={{ width: '100%', marginTop: '24px' }}>
