@@ -7,7 +7,7 @@ import { addStudyLog, addWrongHanja } from '../services/mockDb';
 export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, onCompleteGame }) {
   const allHanja = getHanjaByLevel(level, false);
   
-  const [gameState, setGameState] = useState('playing'); // 'playing' | 'gameover' | 'victory'
+  const [gameState, setGameState] = useState('ready'); // 'ready' | 'playing' | 'gameover' | 'victory'
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [fallingHanja, setFallingHanja] = useState([]);
@@ -252,7 +252,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [gameState, soundOn, isPaused]);
+  }, [gameState, soundOn, isPaused, hasStarted]);
 
 
 
