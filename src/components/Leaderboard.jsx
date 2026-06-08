@@ -1,18 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Trophy, Users, RefreshCw } from 'lucide-react';
-import { getLeaderboard } from '../services/mockDb';
+import { Award, Trophy, Users, RefreshCw, Loader2 } from 'lucide-react';
+import { fetchGlobalLeaderboard } from '../services/dbSync';
 
 export default function Leaderboard({ profile }) {
   const [boardData, setBoardData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const refreshData = () => {
-    setBoardData(getLeaderboard());
+  const refreshData = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchGlobalLeaderboard();
+      // Mark current user if logged in
+      const mapped = data.map(u => ({
+        ...u,
+        isUser: profile.isLoggedIn && u.username === profile.username
+      }));
+      setBoardData(mapped);
+    } catch (e) {
+      console.warn(e);
+    }
+    setIsLoading(false);
   };
 
   useEffect(() => {
     refreshData();
     // Refresh periodically
-    const timer = setInterval(refreshData, 15000);
+    const timer = setInterval(refreshData, 30000);
     return () => clearInterval(timer);
   }, [profile.gold]);
 
@@ -48,25 +61,27 @@ export default function Leaderboard({ profile }) {
               borderRadius: '20px',
               padding: '4px 8px',
               color: 'var(--color-primary)',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
               fontSize: '0.72rem',
               fontWeight: 'bold',
               transition: 'all 0.2s',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              opacity: isLoading ? 0.6 : 1
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.06)'}
+            onMouseEnter={(e) => { if(!isLoading) e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)' }}
+            onMouseLeave={(e) => { if(!isLoading) e.currentTarget.style.background = 'rgba(16, 185, 129, 0.06)' }}
+            disabled={isLoading}
           >
-            <RefreshCw size={11} /> 새로고침
+            {isLoading ? <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={11} />} 새로고침
           </button>
         </div>
 
         <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
-          💡 조선 팔도 전역의 수련생들과 누적 골드 획득량을 경쟁하는 실시간 랭킹입니다. 
-          학습과 도전 과제를 완수하고, 나보다 순위가 높은 라이벌들을 추월하여 1위를 탈환해 보세요!
+          💡 오직 실제로 가입하여 정진 중인 전국의 진짜 수련생들만 기록되는 실시간 글로벌 랭킹입니다. 
+          꾸준한 학습으로 골드를 획득하고 진짜 수련생들 사이에서 순위를 높여 보세요!
         </p>
 
         {/* List of Rankers */}
