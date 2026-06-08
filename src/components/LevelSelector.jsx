@@ -3,6 +3,7 @@ import { Volume2, VolumeX, BookOpen, Clock, CloudRain, PenTool } from 'lucide-re
 import { HANJA_LEVELS } from '../services/hanjaDb';
 import { getRankByXp, removeWrongHanja } from '../services/mockDb';
 import { speakKorean, unlockTtsAudio } from '../utils/tts';
+import Leaderboard from './Leaderboard';
 
 export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMode, soundOn, onToggleSound, profile, onOpenLoginModal, onLogout, onUpdateProfile }) {
   const [isEditingName, setIsEditingName] = useState(false);
@@ -688,13 +689,21 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 overflowY: 'auto',
                 paddingRight: '4px'
               }}>
-                {profile.studyHistory.map((log) => {
-                  const dateStr = new Date(log.timestamp).toLocaleString('ko-KR', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  });
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textAlign: 'right', marginBottom: '4px', fontWeight: 'bold' }}>
+                  * 최근 1주일 간의 데이터
+                </div>
+                {(() => {
+                  const recentLogs = profile.studyHistory.filter(log => new Date(log.timestamp) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+                  if (recentLogs.length === 0) {
+                    return <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)' }}>최근 1주일 내 학습 기록이 없습니다.</div>;
+                  }
+                  return recentLogs.map((log) => {
+                    const dateStr = new Date(log.timestamp).toLocaleString('ko-KR', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
                   return (
                     <div
                       key={log.id}
@@ -732,7 +741,8 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                       </div>
                     </div>
                   );
-                })}
+                });
+                })()}
               </div>
             )}
           </div>
@@ -866,6 +876,11 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           </>
         )}
       </div>
+      
+      {/* 👑 랭킹 보드 */}
+      {profile && profile.isLoggedIn && (
+        <Leaderboard profile={profile} />
+      )}
 
     </div>
   );

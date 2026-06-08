@@ -45,6 +45,8 @@ export async function saveProfileToCloud(profile) {
       hearts: profile.hearts,
       unlockedLevels: profile.unlockedLevels || ['8급'],
       achievements: profile.achievements || [],
+      studyHistory: profile.studyHistory || [],
+      wrongHanjaNotes: profile.wrongHanjaNotes || {},
       authProvider: profile.authProvider,
       lastUpdated: new Date().toISOString()
     };
@@ -95,7 +97,9 @@ export async function loadProfileFromCloud(email, provider) {
       xp: cloudData.xp ?? 0,
       hearts: cloudData.hearts ?? 5,
       unlockedLevels: cloudData.unlockedLevels || ['8급'],
-      achievements: cloudData.achievements || []
+      achievements: cloudData.achievements || [],
+      studyHistory: cloudData.studyHistory || [],
+      wrongHanjaNotes: cloudData.wrongHanjaNotes || {}
     };
   } catch (error) {
     console.error('Cloud load error:', error);

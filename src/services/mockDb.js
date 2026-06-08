@@ -207,11 +207,11 @@ const DEFAULT_PROFILE = {
 };
 
 const MOCK_COMPETITORS = [
-  { username: '퇴계 이황', xp: 5800, rankName: '한림학사 (翰林學士)', goal: '준6급' },
-  { username: '율곡 이이', xp: 4200, rankName: '한림학사 (翰林學士)', goal: '준6급' },
-  { username: '신사임당', xp: 2600, rankName: '장원급제 (壯元及第)', goal: '7급' },
-  { username: '집현전 장영실', xp: 1200, rankName: '진사 (進士)', goal: '8급' },
-  { username: '방랑시인 김삿갓', xp: 450, rankName: '유생 (儒生)', goal: '8급' }
+  { username: '퇴계 이황', xp: 5800, gold: 3500, rankName: '한림학사 (翰林學士)', goal: '준6급' },
+  { username: '율곡 이이', xp: 4200, gold: 2800, rankName: '한림학사 (翰林學士)', goal: '준6급' },
+  { username: '신사임당', xp: 2600, gold: 1500, rankName: '장원급제 (壯元及第)', goal: '7급' },
+  { username: '집현전 장영실', xp: 1200, gold: 950, rankName: '진사 (進士)', goal: '8급' },
+  { username: '방랑시인 김삿갓', xp: 450, gold: 300, rankName: '유생 (儒生)', goal: '8급' }
 ];
 
 const INITIAL_FEEDBACKS = [];
@@ -349,6 +349,7 @@ export const getLeaderboard = () => {
   const userEntry = {
     username: profile.username + ' (나)',
     xp: profile.xp,
+    gold: profile.gold,
     rankName: currentRank.name,
     isUser: true
   };
@@ -365,10 +366,13 @@ export const getLeaderboard = () => {
   if (!lastUpdate || now - parseInt(lastUpdate) > 60000) {
     competitors = competitors.map(comp => {
       const addedXp = Math.floor(Math.random() * 15);
+      const addedGold = Math.floor(Math.random() * 5);
       const newXp = comp.xp + addedXp;
+      const newGold = (comp.gold || 0) + addedGold;
       return {
         ...comp,
         xp: newXp,
+        gold: newGold,
         rankName: getRankByXp(newXp).name
       };
     });
@@ -377,7 +381,7 @@ export const getLeaderboard = () => {
   }
   
   const combined = [...competitors, userEntry];
-  combined.sort((a, b) => b.xp - a.xp);
+  combined.sort((a, b) => b.gold - a.gold);
   
   return combined;
 };

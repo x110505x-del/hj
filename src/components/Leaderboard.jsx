@@ -14,7 +14,7 @@ export default function Leaderboard({ profile }) {
     // Refresh periodically
     const timer = setInterval(refreshData, 15000);
     return () => clearInterval(timer);
-  }, [profile.xp]);
+  }, [profile.gold]);
 
   return (
     <div style={{ maxWidth: '550px', margin: '30px auto', width: '100%', padding: '0 20px' }}>
@@ -55,7 +55,7 @@ export default function Leaderboard({ profile }) {
         </div>
 
         <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-          💡 학습을 진행하여 획득한 누적 경험치(XP) 기준 실시간 랭킹입니다. 
+          💡 학습을 진행하여 획득한 누적 골드(Gold) 기준 실시간 랭킹입니다. 
           경쟁 수련자들도 실시간으로 정진하며 순위가 수시로 바뀝니다!
         </p>
 
@@ -120,10 +120,10 @@ export default function Leaderboard({ profile }) {
                   </div>
                 </div>
 
-                {/* XP display */}
+                {/* Gold display */}
                 <div style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '1.1rem', color: 'var(--color-secondary)' }}>{item.xp}</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginLeft: '2px' }}>XP</span>
+                  <span style={{ fontSize: '1.1rem', color: '#d97706' }}>{item.gold}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginLeft: '2px' }}>G</span>
                 </div>
               </div>
             );
