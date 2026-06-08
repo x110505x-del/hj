@@ -399,8 +399,13 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
 
     setFallingHanja((prev) => {
       const nextFalling = [...prev, newFalling];
-      const shouldShuffle = currentSpawnNum % 3 === 0;
-      ensureHanjaInBottomCards(nextFalling, shouldShuffle);
+      
+      // Defend against State Deadlock by pushing side effects into the next event loop tick
+      setTimeout(() => {
+        const shouldShuffle = currentSpawnNum % 3 === 0;
+        ensureHanjaInBottomCards(nextFalling, shouldShuffle);
+      }, 0);
+
       return nextFalling;
     });
   };
