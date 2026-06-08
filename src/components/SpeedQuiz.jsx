@@ -41,6 +41,11 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound, onCom
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
       osc.start();
       osc.stop(ctx.currentTime + 0.06);
+
+      // Prevent AudioContext leaks by closing it
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 100);
     } catch (e) {
       console.warn("AudioContext failed", e);
     }
@@ -67,6 +72,11 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound, onCom
       
       osc.start(now);
       osc.stop(now + 0.4);
+
+      // Prevent AudioContext leaks by closing it
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 500);
     } catch (e) {
       console.warn("Correct sound failed", e);
     }
@@ -93,6 +103,11 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound, onCom
       
       osc.start(now);
       osc.stop(now + 0.35);
+
+      // Prevent AudioContext leaks by closing it
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 400);
     } catch (e) {
       console.warn("Incorrect sound failed", e);
     }
@@ -188,6 +203,10 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound, onCom
     setIsAnswered(false);
     setTimeLeft(TIME_LIMIT);
     lastTickedSecondRef.current = 6; // Reset tick tracking for the new question
+
+    if (soundOn) {
+      speakKorean(`${currentHanja.meaning} ${currentHanja.sound}`);
+    }
 
     // Generate 5 options (1 correct, 4 incorrect)
     const correctOption = currentHanja;
