@@ -166,11 +166,8 @@ export default function AdminPanel({ profile }) {
                   {users.map((u, i) => (
                     <tr 
                       key={i} 
-                      onClick={() => setSelectedUser(u)}
                       style={{ 
                         borderBottom: '1px solid var(--color-border)',
-                        cursor: 'pointer',
-                        background: selectedUser?.username === u.username ? 'rgba(4, 120, 87, 0.05)' : 'transparent',
                         transition: 'all 0.2s'
                       }}
                     >
@@ -196,79 +193,6 @@ export default function AdminPanel({ profile }) {
               </table>
             </div>
           </div>
-
-          {/* Selected User's Study History logs */}
-          {selectedUser && (
-            <div className="glass-card" style={{ padding: '16px' }}>
-              <h3 className="font-display" style={{ fontSize: '1.1rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
-                📜 [{selectedUser.username}] 수련생 학습 기록 로그
-              </h3>
-              {!selectedUser.studyHistory || selectedUser.studyHistory.length === 0 ? (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '30px 10px',
-                  color: 'var(--color-text-muted)',
-                  fontSize: '0.82rem'
-                }}>
-                  아직 기록된 수련 로그가 없습니다.
-                </div>
-              ) : (
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  maxHeight: '220px',
-                  overflowY: 'auto',
-                  paddingRight: '4px'
-                }}>
-                  {selectedUser.studyHistory.map((log) => {
-                    const dateStr = new Date(log.timestamp).toLocaleString('ko-KR', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
-                    return (
-                      <div
-                        key={log.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: '8px',
-                          padding: '8px 12px',
-                          fontSize: '0.78rem'
-                        }}
-                      >
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{
-                              backgroundColor: log.type === '스피드 퀴즈' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                              color: log.type === '스피드 퀴즈' ? 'var(--color-primary)' : '#2563eb',
-                              padding: '1px 5px',
-                              borderRadius: '3px',
-                              fontSize: '0.65rem',
-                              fontWeight: 'bold'
-                            }}>
-                              {log.type}
-                            </span>
-                            <span style={{ fontWeight: 'bold', color: '#374151' }}>{log.detail}</span>
-                          </div>
-                          <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{dateStr}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px', fontSize: '0.72rem', fontWeight: 'bold' }}>
-                          {log.goldEarned > 0 && <span style={{ color: '#d97706' }}>+{log.goldEarned}G</span>}
-                          {log.xpEarned > 0 && <span style={{ color: 'var(--color-primary)' }}>+{log.xpEarned}XP</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Right Side: Feedbacks Detail Inspector */}
