@@ -269,7 +269,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       );
 
       if (onCompleteGame) {
-        onCompleteGame(g, x);
+        onCompleteGame(g, x, gameState === 'victory');
       }
     }
   }, [gameState]);

@@ -36,7 +36,7 @@ export default function App() {
     }
   };
 
-  const handleCompleteGame = (goldEarned, xpEarned) => {
+  const handleCompleteGame = (goldEarned, xpEarned, isSuccess = true) => {
     const today = new Date().toISOString().split('T')[0];
     let updated = getProfile();
 
@@ -50,9 +50,9 @@ export default function App() {
     updated.gold += goldEarned;
     updated.xp += xpEarned;
 
-    // 3. Perform daily check-in (streak) if not already done today
+    // 3. Perform daily check-in (streak) if not already done today AND the game was successful!
     let streakMsg = '';
-    if (updated.streakLastActive !== today) {
+    if (isSuccess && updated.streakLastActive !== today) {
       let streak = updated.streak;
       if (updated.streakLastActive) {
         const lastActive = new Date(updated.streakLastActive);
@@ -78,7 +78,9 @@ export default function App() {
 
     if (soundOn && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const speechText = `수련 완료. ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`;
+      const speechText = isSuccess 
+        ? `수련 완료. ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`
+        : `수련 도전 실패. 하지만 ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`;
       const utterance = new SpeechSynthesisUtterance(speechText);
       utterance.lang = 'ko-KR';
       window.speechSynthesis.speak(utterance);
@@ -87,7 +89,11 @@ export default function App() {
     if (streakMsg) {
       alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)\n\n${streakMsg}`);
     } else {
-      alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)`);
+      if (isSuccess) {
+        alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)`);
+      } else {
+        alert(`😢 수련 실패!\n한자비가 바닥에 닿아 미션에 실패했습니다. (출석 불인정)\n(수련 기본 보상 획득: +${goldEarned} Gold, +${xpEarned} XP)`);
+      }
     }
   };
 

@@ -148,7 +148,7 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound, onCom
       );
 
       if (onCompleteGame) {
-        onCompleteGame(g, x);
+        onCompleteGame(g, x, true);
       }
     }
   }, [gameState]);
