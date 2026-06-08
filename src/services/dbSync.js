@@ -268,3 +268,60 @@ export async function updateGlobalLeaderboard(profile) {
     return false;
   }
 }
+
+/**
+ * Fetches all registered users' full profiles from the cloud for the Admin Panel
+ */
+export async function getCloudAdminUsersList() {
+  try {
+    const keysResponse = await fetch(`${KV_BASE_URL}?format=json`);
+    if (!keysResponse.ok) return [];
+    
+    const keys = await keysResponse.json();
+    if (!Array.isArray(keys)) return [];
+    
+    const userKeys = keys.filter(k => k.startsWith('usr_') && k !== 'usr_test');
+    
+    const fetchPromises = userKeys.map(async (key) => {
+      try {
+        const res = await fetch(`${KV_BASE_URL}${key}`);
+        if (res.ok) {
+          const profile = await res.json();
+          if (profile && profile.username) {
+            let rName = '유생 (儒生)';
+            const xp = profile.xp ?? 0;
+            if (xp >= 1500) rName = '진사 (進士)';
+            if (xp >= 3500) rName = '장원급제 (壯元及第)';
+            if (xp >= 6000) rName = '한림학사 (翰林學士)';
+            if (xp >= 10000) rName = '대제학 (大提學)';
+            
+            return {
+              username: profile.username,
+              email: profile.email || 'guest@hanja.com',
+              gold: profile.gold ?? 0,
+              xp: xp,
+              streak: profile.streak || 1,
+              goal: profile.goal || '8급',
+              currentLevel: profile.currentLevel || '8급',
+              rankName: rName,
+              role: profile.role || 'user',
+              studyHistory: profile.studyHistory || [],
+              lastUpdated: profile.lastUpdated || new Date().toISOString()
+            };
+          }
+        }
+      } catch (err) {
+        console.warn(`Failed to fetch user profile for admin: ${key}`, err);
+      }
+      return null;
+    });
+    
+    const cloudUsers = (await Promise.all(fetchPromises)).filter(Boolean);
+    // Sort by username or lastUpdated
+    cloudUsers.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+    return cloudUsers;
+  } catch (e) {
+    console.error('Failed to get cloud admin users list', e);
+    return [];
+  }
+}

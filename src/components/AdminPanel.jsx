@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Users, MessageSquare, BarChart3, Reply, Award, CheckCircle2, ChevronRight } from 'lucide-react';
-import { getAdminUsersList, getFeedbackList, addFeedbackReply } from '../services/mockDb';
+import { getFeedbackList, addFeedbackReply } from '../services/mockDb';
+import { getCloudAdminUsersList } from '../services/dbSync';
 
 export default function AdminPanel({ profile }) {
   const [users, setUsers] = useState([]);
@@ -10,8 +11,8 @@ export default function AdminPanel({ profile }) {
   const [replyText, setReplyText] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
-  const loadData = () => {
-    const userList = getAdminUsersList();
+  const loadData = async () => {
+    const userList = await getCloudAdminUsersList();
     setUsers(userList);
     setFeedbacks(getFeedbackList());
     if (userList.length > 0) {
@@ -23,7 +24,7 @@ export default function AdminPanel({ profile }) {
     loadData();
   }, [profile]);
 
-  const handlePostReply = (e) => {
+  const handlePostReply = async (e) => {
     e.preventDefault();
     if (!selectedPost) return;
     if (!replyText.trim()) {
@@ -44,7 +45,7 @@ export default function AdminPanel({ profile }) {
       }
 
       setReplyText('');
-      loadData();
+      await loadData();
       
       // Refresh active view
       const updatedFeedbacks = getFeedbackList();
