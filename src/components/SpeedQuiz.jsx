@@ -204,10 +204,6 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound, onCom
     setTimeLeft(TIME_LIMIT);
     lastTickedSecondRef.current = 6; // Reset tick tracking for the new question
 
-    if (soundOn) {
-      speakKorean(`${currentHanja.meaning} ${currentHanja.sound}`);
-    }
-
     // Generate 5 options (1 correct, 4 incorrect)
     const correctOption = currentHanja;
     
