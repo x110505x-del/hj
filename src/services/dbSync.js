@@ -119,14 +119,84 @@ export async function loadProfileFromCloud(email, provider) {
  */
 export async function fetchGlobalLeaderboard() {
   try {
-    const url = `${KV_BASE_URL}global_hanja_leaderboard`;
-    const response = await fetch(url);
-    if (!response.ok) return [];
-    const data = await response.json();
-    if (data && Array.isArray(data.board)) {
-      return data.board;
+    const boardUrl = `${KV_BASE_URL}global_hanja_leaderboard`;
+    let boardList = [];
+    
+    // 1. Fetch current aggregated board
+    const response = await fetch(boardUrl);
+    if (response.ok) {
+      const data = await response.json();
+      if (data && Array.isArray(data.board)) {
+        boardList = data.board;
+      } else if (Array.isArray(data)) {
+        boardList = data;
+      }
     }
-    return Array.isArray(data) ? data : [];
+
+    // 2. Fetch all keys in the bucket to find registered users (usr_*)
+    const keysResponse = await fetch(`${KV_BASE_URL}?format=json`);
+    if (keysResponse.ok) {
+      const keys = await keysResponse.json();
+      if (Array.isArray(keys)) {
+        // Exclude test accounts and only grab active real user hashes
+        const userKeys = keys.filter(k => k.startsWith('usr_') && k !== 'usr_test');
+        
+        // Find user keys that are NOT yet in the boardList
+        const missingUserKeys = userKeys.filter(key => {
+          return !boardList.some(item => item.id === key);
+        });
+
+        // 3. If there are missing users, fetch their profiles in parallel
+        if (missingUserKeys.length > 0) {
+          const fetchPromises = missingUserKeys.map(async (key) => {
+            try {
+              const res = await fetch(`${KV_BASE_URL}${key}`);
+              if (res.ok) {
+                const profile = await res.json();
+                if (profile && profile.username) {
+                  let rName = '유생 (儒生)';
+                  const xp = profile.xp ?? 0;
+                  if (xp >= 1500) rName = '진사 (進士)';
+                  if (xp >= 3500) rName = '장원급제 (壯元及第)';
+                  if (xp >= 6000) rName = '한림학사 (翰林學士)';
+                  if (xp >= 10000) rName = '대제학 (大提學)';
+                  
+                  return {
+                    id: key,
+                    username: profile.username,
+                    gold: profile.gold ?? 0,
+                    xp: xp,
+                    rankName: rName,
+                    lastUpdated: profile.lastUpdated ? new Date(profile.lastUpdated).getTime() : new Date().getTime()
+                  };
+                }
+              }
+            } catch (err) {
+              console.warn(`Failed to fetch missing user profile: ${key}`, err);
+            }
+            return null;
+          });
+
+          const missingEntries = (await Promise.all(fetchPromises)).filter(Boolean);
+          
+          if (missingEntries.length > 0) {
+            // Merge, sort, and slice top 100
+            boardList = [...boardList, ...missingEntries];
+            boardList.sort((a, b) => b.gold - a.gold);
+            boardList = boardList.slice(0, 100);
+
+            // 4. Optimistically write back the healed board to kvdb using text/plain (CORS bypass)
+            fetch(boardUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({ board: boardList })
+            }).catch(e => console.warn("Auto-healing leaderboard update failed", e));
+          }
+        }
+      }
+    }
+
+    return boardList;
   } catch (e) {
     console.error('Failed to fetch global leaderboard', e);
     return [];
