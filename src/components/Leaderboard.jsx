@@ -10,11 +10,44 @@ export default function Leaderboard({ profile }) {
     setIsLoading(true);
     try {
       const data = await fetchGlobalLeaderboard();
-      // Mark current user if logged in
-      const mapped = data.map(u => ({
-        ...u,
-        isUser: profile.isLoggedIn && u.username === profile.username
-      }));
+      // Mark and override current user's entry with their latest local profile gold/xp
+      let mapped = data.map(u => {
+        const isUser = profile.isLoggedIn && u.username === profile.username;
+        if (isUser) {
+          return {
+            ...u,
+            gold: profile.gold,
+            xp: profile.xp,
+            isUser: true
+          };
+        }
+        return {
+          ...u,
+          isUser: false
+        };
+      });
+
+      // If the logged in user is not yet in the global leaderboard array from the server,
+      // optimistically inject them so they see themselves instantly.
+      const hasUserInBoard = mapped.some(u => u.isUser);
+      if (profile.isLoggedIn && !hasUserInBoard) {
+        let rName = '유생 (儒生)';
+        if (profile.xp >= 1500) rName = '진사 (進士)';
+        if (profile.xp >= 3500) rName = '장원급제 (壯元及第)';
+        if (profile.xp >= 6000) rName = '한림학사 (翰林學士)';
+        if (profile.xp >= 10000) rName = '대제학 (大提學)';
+
+        mapped.push({
+          username: profile.username,
+          gold: profile.gold,
+          xp: profile.xp,
+          rankName: rName,
+          isUser: true
+        });
+      }
+
+      // Re-sort the combined board based on updated gold values
+      mapped.sort((a, b) => b.gold - a.gold);
       setBoardData(mapped);
     } catch (e) {
       console.warn(e);
@@ -97,7 +130,7 @@ export default function Leaderboard({ profile }) {
 
               return (
                 <div
-                  key={item.username}
+                  key={`${item.username || 'user'}-${idx}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
