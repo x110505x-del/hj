@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Heart, Award, RefreshCw, Volume2, VolumeX, Flame, Trophy, Play } from 'lucide-react';
 import { getHanjaByLevel } from '../services/hanjaDb';
 import { speakKorean, cancelSpeech, unlockTtsAudio } from '../utils/tts';
+import { addStudyLog, addWrongHanja } from '../services/mockDb';
 
-export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound }) {
-  const allHanja = getHanjaByLevel(level);
+export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, onCompleteGame }) {
+  const allHanja = getHanjaByLevel(level, false);
   
   const [gameState, setGameState] = useState('playing'); // 'playing' | 'gameover' | 'victory'
   const [score, setScore] = useState(0);
@@ -17,6 +18,33 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
   const [highlightedId, setHighlightedId] = useState(null);
   const [clearedCount, setClearedCount] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
+
+  const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false);
+  const scoreRef = useRef(0);
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+
+  // Handle visibility API to auto-pause when tab goes out of focus
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        setIsPaused(true);
+      } else {
+        setIsPaused(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
   
   const shuffleTimerRef = useRef(null);
   const [cols, setCols] = useState(typeof window !== 'undefined' && window.innerWidth <= 768 ? 3 : 5);
@@ -140,6 +168,10 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
     if (gameState !== 'playing') return;
 
     const updateGame = () => {
+      if (isPausedRef.current) {
+        animationFrameRef.current = requestAnimationFrame(updateGame);
+        return;
+      }
       // 1. Update falling character positions
       setFallingHanja((prev) => {
         let reachedBottomCount = 0;
@@ -167,6 +199,19 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
 
         // Handle floor hits
         if (reachedBottomCount > 0) {
+          // Record floor hit Hanja to wrong note
+          const hitItems = updated.filter((item) => item.y >= 82);
+          hitItems.forEach((item) => {
+            addWrongHanja({
+              id: item.id,
+              char: item.char,
+              meaning: item.meaning,
+              sound: item.sound,
+              fullMeaning: item.fullMeaning,
+              level: level
+            });
+          });
+
           setLives((prevLives) => {
             const nextLives = prevLives - reachedBottomCount;
             if (nextLives <= 0) {
@@ -203,16 +248,40 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [gameState, soundOn]);
+  }, [gameState, soundOn, isPaused]);
 
 
 
 
+
+  // Report rewards on completion
+  useEffect(() => {
+    if (gameState === 'victory' || gameState === 'gameover') {
+      const g = clearedCount * 2;
+      const x = clearedCount * 5;
+      
+      // Save study history log
+      addStudyLog(
+        '한자비 게임',
+        `${level} 수련 완료 (${gameState === 'victory' ? '미션 성공' : '미션 실패'}, 격파: ${clearedCount}개)`,
+        g,
+        x
+      );
+
+      if (onCompleteGame) {
+        onCompleteGame(g, x);
+      }
+    }
+  }, [gameState]);
 
   const startGame = () => {
     if (allHanja.length === 0) return;
 
-    const shuffledHanja = [...allHanja].sort(() => 0.5 - Math.random());
+    // Determine target question count: 50 if database has > 50, otherwise 30 to allow a random subset
+    const questionCount = allHanja.length > 50 ? 50 : Math.min(30, allHanja.length);
+
+    // Shuffle and slice to target question count
+    const shuffledHanja = [...allHanja].sort(() => 0.5 - Math.random()).slice(0, questionCount);
     spawnQueueRef.current = [...shuffledHanja];
     totalLevelCountRef.current = shuffledHanja.length;
 
@@ -236,6 +305,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
     
     // Spawn a character every 3.0 seconds
     spawnTimerRef.current = setInterval(() => {
+      if (isPausedRef.current) return;
       spawnHanja();
     }, 3000);
   };
@@ -300,7 +370,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
     
     // Base speed, made more varied (0.05 to 0.16)
     const baseSpeed = 0.05 + Math.random() * 0.11;
-    const speedMultiplier = 1 + (score / 250);
+    const speedMultiplier = 1 + (scoreRef.current / 250);
     let finalSpeed = Math.min(1.2, baseSpeed * speedMultiplier);
 
     // 한일(一), 두이(二), 석삼(三) 은 매우 쉬우므로 속도를 2배 빠르게 적용
@@ -422,6 +492,21 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
     } else {
       setCombo(0);
       setHighlightedId(card.id);
+      
+      // Record the closest-to-bottom falling Hanja as a wrong answer (since the user clicked the wrong meaning card)
+      if (fallingHanja.length > 0) {
+        const sortedFalling = [...fallingHanja].sort((a, b) => b.y - a.y);
+        const targetWrongItem = sortedFalling[0];
+        addWrongHanja({
+          id: targetWrongItem.id,
+          char: targetWrongItem.char,
+          meaning: targetWrongItem.meaning,
+          sound: targetWrongItem.sound,
+          fullMeaning: targetWrongItem.fullMeaning,
+          level: level
+        });
+      }
+
       setTimeout(() => setHighlightedId(null), 300);
     }
   };
@@ -634,6 +719,32 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound })
       >
         {gameState === 'playing' ? (
           <>
+            {/* Pause Overlay */}
+            {isPaused && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'rgba(255, 255, 255, 0.75)',
+                backdropFilter: 'blur(3px)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 10,
+                color: 'var(--color-primary)'
+              }}>
+                <h3 className="font-display" style={{ fontSize: '1.4rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  ⏸️ 게임 일시 정지됨
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: '6px 0 0 0' }}>
+                  화면이 다시 활성화되면 한자비가 계속 내립니다.
+                </p>
+              </div>
+            )}
+
             <style>{`
               @keyframes danger-blink {
                 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }

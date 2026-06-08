@@ -6,6 +6,7 @@ import HanjaRainGame from './components/HanjaRainGame';
 import HanjaWritingPractice from './components/HanjaWritingPractice';
 import FeedbackWidget from './components/FeedbackWidget';
 import LoginModal from './components/LoginModal';
+import AdminPanel from './components/AdminPanel';
 import { getProfile, saveProfile } from './services/mockDb';
 import { Volume2, VolumeX } from 'lucide-react';
 
@@ -35,10 +36,191 @@ export default function App() {
     }
   };
 
+  const handleCompleteGame = (goldEarned, xpEarned) => {
+    const today = new Date().toISOString().split('T')[0];
+    let updated = getProfile();
+
+    // 1. Reset daily count if date changed
+    if (updated.lastActiveDate !== today) {
+      updated.lastActiveDate = today;
+      updated.flashcardsToday = 0;
+    }
+
+    // 2. Award game rewards
+    updated.gold += goldEarned;
+    updated.xp += xpEarned;
+
+    // 3. Perform daily check-in (streak) if not already done today
+    let streakMsg = '';
+    if (updated.streakLastActive !== today) {
+      let streak = updated.streak;
+      if (updated.streakLastActive) {
+        const lastActive = new Date(updated.streakLastActive);
+        const todayDate = new Date(today);
+        const diffTime = Math.abs(todayDate - lastActive);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          streak += 1;
+        } else if (diffDays > 1) {
+          streak = 1;
+        }
+      } else {
+        streak = 1;
+      }
+      updated.streak = streak;
+      updated.streakLastActive = today;
+      updated.xp += 30; // Daily check-in XP bonus
+      streakMsg = `🔥 오늘의 수련 완료! 연속 ${streak}일 출석 성공! (추가 보상: +30 XP)`;
+    }
+
+    setProfile(updated);
+    saveProfile(updated);
+
+    if (soundOn && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const speechText = `수련 완료. ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`;
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      utterance.lang = 'ko-KR';
+      window.speechSynthesis.speak(utterance);
+    }
+
+    if (streakMsg) {
+      alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)\n\n${streakMsg}`);
+    } else {
+      alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)`);
+    }
+  };
+
+  const handleStudyCard = () => {
+    const today = new Date().toISOString().split('T')[0];
+    let updated = getProfile();
+
+    // 1. Reset daily count if date changed
+    if (updated.lastActiveDate !== today) {
+      updated.lastActiveDate = today;
+      updated.flashcardsToday = 0;
+    }
+
+    // 2. Increment count
+    updated.flashcardsToday = (updated.flashcardsToday || 0) + 1;
+
+    // 3. Check if they reached exactly 50 cards today and haven't checked in yet
+    if (updated.flashcardsToday === 50 && updated.streakLastActive !== today) {
+      let streak = updated.streak;
+      if (updated.streakLastActive) {
+        const lastActive = new Date(updated.streakLastActive);
+        const todayDate = new Date(today);
+        const diffTime = Math.abs(todayDate - lastActive);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          streak += 1;
+        } else if (diffDays > 1) {
+          streak = 1;
+        }
+      } else {
+        streak = 1;
+      }
+      updated.streak = streak;
+      updated.streakLastActive = today;
+      updated.xp += 30; // Daily check-in XP bonus
+
+      if (soundOn && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance("오늘의 한자 수련 체크인에 성공하였습니다. 화이팅!");
+        utterance.lang = 'ko-KR';
+        window.speechSynthesis.speak(utterance);
+      }
+      alert(`🔥 플래시 카드 50자 학습 완료! 연속 ${streak}일 출석 성공!\n(보상: +30 XP)`);
+    }
+
+    setProfile(updated);
+    saveProfile(updated);
+  };
+
   // Scroll to top on screen change to ensure header is visible and content layout is clean
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentScreen]);
+
+  // Subscribe to real-time profile changes from mockDb controllers
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      setProfile(getProfile());
+    };
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, []);
+
+  // 10-minute automatic logout monitor (Idle timeout & Tab background escape protection)
+  useEffect(() => {
+    if (!profile.isLoggedIn) return;
+
+    const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+    let idleTimer = null;
+    let hiddenTimestamp = null;
+
+    const resetIdleTimer = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        handleAutoLogout();
+      }, TIMEOUT_MS);
+    };
+
+    const handleAutoLogout = () => {
+      const updated = {
+        ...getProfile(), // read latest profile status from LocalStorage
+        isLoggedIn: false,
+        email: '',
+        authProvider: '',
+        isPrivacyFirst: false
+      };
+      setProfile(updated);
+      saveProfile(updated);
+      setCurrentScreen('selector'); // reroute to dashboard
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance("장시간 미활동 또는 화면 이탈로 인해 자동 로그아웃 되었습니다.");
+        utterance.lang = 'ko-KR';
+        window.speechSynthesis.speak(utterance);
+      }
+      alert("🔒 10분 동안 활동이 없거나 브라우저를 벗어나 자동 로그아웃 되었습니다. 개인정보 보호를 위해 세션을 종료합니다.");
+    };
+
+    // User activity listeners
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    activityEvents.forEach(evt => {
+      window.addEventListener(evt, resetIdleTimer);
+    });
+
+    // Tab visibility (background execution) handler
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenTimestamp = Date.now();
+      } else if (document.visibilityState === 'visible' && hiddenTimestamp !== null) {
+        const elapsed = Date.now() - hiddenTimestamp;
+        if (elapsed >= TIMEOUT_MS) {
+          handleAutoLogout();
+        } else {
+          resetIdleTimer();
+        }
+        hiddenTimestamp = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    resetIdleTimer(); // start initial countdown
+
+    return () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      activityEvents.forEach(evt => {
+        window.removeEventListener(evt, resetIdleTimer);
+      });
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [profile.isLoggedIn]);
 
   const handleToggleSound = () => {
     setSoundOn(prev => {
@@ -141,6 +323,10 @@ export default function App() {
             profile={profile}
             onOpenLoginModal={() => setIsLoginOpen(true)}
             onLogout={handleLogout}
+            onUpdateProfile={(updated) => {
+              setProfile(updated);
+              saveProfile(updated);
+            }}
           />
         )}
 
@@ -150,6 +336,7 @@ export default function App() {
             onBack={() => setCurrentScreen('selector')}
             soundOn={soundOn}
             onToggleSound={handleToggleSound}
+            onStudyCard={handleStudyCard}
           />
         )}
 
@@ -159,6 +346,7 @@ export default function App() {
             onBack={() => setCurrentScreen('selector')}
             soundOn={soundOn}
             onToggleSound={handleToggleSound}
+            onCompleteGame={handleCompleteGame}
           />
         )}
 
@@ -168,6 +356,7 @@ export default function App() {
             onBack={() => setCurrentScreen('selector')}
             soundOn={soundOn}
             onToggleSound={handleToggleSound}
+            onCompleteGame={handleCompleteGame}
           />
         )}
 
@@ -179,11 +368,59 @@ export default function App() {
             onToggleSound={handleToggleSound}
           />
         )}
+
+        {currentScreen === 'admin' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ textAlign: 'left', maxWidth: '950px', margin: '0 auto', width: '100%', padding: '0 20px', boxSizing: 'border-box' }}>
+              <button
+                onClick={() => setCurrentScreen('selector')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: '1.5px solid var(--color-border)',
+                  backgroundColor: '#ffffff',
+                  fontSize: '0.85rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+              >
+                ← 대시보드로 돌아가기
+              </button>
+            </div>
+            <AdminPanel profile={profile} />
+          </div>
+        )}
       </main>
 
       {/* Footnote */}
-      <footer className="footer-container">
-        &copy; 2026 한자 마스터. All Rights Reserved. | 급수별 한자 게임 수련장 🏆
+      <footer className="footer-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <span>&copy; 2026 한자 마스터. All Rights Reserved. | 급수별 한자 게임 수련장 🏆</span>
+        <span style={{ color: 'var(--color-border)' }}>|</span>
+        <button
+          onClick={() => setCurrentScreen('admin')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--color-text-muted)',
+            fontSize: 'inherit',
+            cursor: 'pointer',
+            padding: 0,
+            textDecoration: 'underline',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '3px'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+        >
+          🛡️ 통제실
+        </button>
       </footer>
       
       {/* Floating global feedback widget */}

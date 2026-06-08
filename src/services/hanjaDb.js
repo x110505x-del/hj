@@ -59818,7 +59818,10 @@ export const HANJA_RAW_DATA = {
   ]
 };
 
-export const getHanjaByLevel = (level) => {
+export const getHanjaByLevel = (level, cumulative = true) => {
+  if (!cumulative) {
+    return HANJA_RAW_DATA[level] || [];
+  }
   const levelsOrder = HANJA_LEVELS;
   const targetIndex = levelsOrder.indexOf(level);
   if (targetIndex === -1) return [];

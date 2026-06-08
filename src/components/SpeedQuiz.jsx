@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Award, Flame, RefreshCw, Volume2, VolumeX, HelpCircle, Play } from 'lucide-react';
 import { getHanjaByLevel } from '../services/hanjaDb';
 import { speakKorean, unlockTtsAudio } from '../utils/tts';
+import { addStudyLog, addWrongHanja } from '../services/mockDb';
 
-export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound }) {
+export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound, onCompleteGame }) {
   const TIME_LIMIT = 5; // 5 seconds per question
   
-  const allHanjaForLevel = getHanjaByLevel(level);
+  const allHanjaForLevel = getHanjaByLevel(level, false);
   
   const [questions, setQuestions] = useState([]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -132,11 +133,36 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound }) {
     return () => clearInterval(timerRef.current);
   }, [timeLeft, gameState, isAnswered, hasStarted]);
 
+  // Report rewards on completion
+  useEffect(() => {
+    if (gameState === 'result') {
+      const g = correctCount * 2;
+      const x = correctCount * 5;
+      
+      // Save study history log
+      addStudyLog(
+        '스피드 퀴즈',
+        `${level} 수련 완료 (정답: ${correctCount}개, 오답: ${incorrectCount}개)`,
+        g,
+        x
+      );
+
+      if (onCompleteGame) {
+        onCompleteGame(g, x);
+      }
+    }
+  }, [gameState]);
+
   const startQuiz = () => {
     if (allHanjaForLevel.length === 0) return;
 
-    // Shuffle the entire list of characters once for this quiz session
-    const selectedQuestions = [...allHanjaForLevel].sort(() => 0.5 - Math.random());
+    // Determine target question count: 50 if database has > 50, otherwise 30 to allow a random subset
+    const questionCount = allHanjaForLevel.length > 50 ? 50 : Math.min(30, allHanjaForLevel.length);
+
+    // Shuffle and slice to target question count
+    const selectedQuestions = [...allHanjaForLevel]
+      .sort(() => 0.5 - Math.random())
+      .slice(0, questionCount);
     
     setQuestions(selectedQuestions);
     setCurrentQIndex(0);
@@ -164,9 +190,10 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound }) {
     // Generate 5 options (1 correct, 4 incorrect)
     const correctOption = currentHanja;
     
-    // Get incorrect pool (excluding current Hanja) from all cumulative characters up to 4급
-    const allHanjaPool = getHanjaByLevel('4급');
-    const incorrectCandidates = allHanjaPool.filter(h => h.id !== currentHanja.id);
+    // Get incorrect pool (excluding current Hanja) from the current level's Hanja (non-cumulative)
+    // If the current level's pool is too small (e.g. less than 10), fall back to 4급 pool
+    const incorrectPool = allHanjaForLevel.length >= 10 ? allHanjaForLevel : getHanjaByLevel('4급');
+    const incorrectCandidates = incorrectPool.filter(h => h.id !== currentHanja.id);
     
     const shuffledIncorrect = incorrectCandidates.sort(() => 0.5 - Math.random()).slice(0, 4);
     const combinedOptions = [correctOption, ...shuffledIncorrect].sort(() => 0.5 - Math.random());
@@ -195,6 +222,12 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound }) {
     } else {
       setCombo(0);
       setIncorrectCount((prev) => prev + 1);
+      
+      // Record to incorrect notes
+      addWrongHanja({
+        ...currentHanja,
+        level: level
+      });
       
       playIncorrectSound();
     }

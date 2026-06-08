@@ -6,17 +6,22 @@ export default function AdminPanel({ profile }) {
   const [users, setUsers] = useState([]);
   const [feedbacks, setFeedbacks] = useState([]);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
   const loadData = () => {
-    setUsers(getAdminUsersList());
+    const userList = getAdminUsersList();
+    setUsers(userList);
     setFeedbacks(getFeedbackList());
+    if (userList.length > 0) {
+      setSelectedUser(userList[0]);
+    }
   };
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [profile]);
 
   const handlePostReply = (e) => {
     e.preventDefault();
@@ -128,7 +133,7 @@ export default function AdminPanel({ profile }) {
 
       </div>
 
-      {/* 2. Middle Row: Split view (User List vs Feedback Detail) */}
+      {/* 2. Middle Row: Split view (User List & Logs vs Feedback Detail) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1.1fr',
@@ -136,46 +141,133 @@ export default function AdminPanel({ profile }) {
         alignItems: 'start'
       }} className="admin-body-split">
         
-        {/* Left Side: Users list */}
-        <div className="glass-card" style={{ padding: '16px' }}>
-          <h3 className="font-display" style={{ fontSize: '1.1rem', color: 'var(--color-primary)', marginBottom: '12px' }}>
-            👥 수련생 계정 세부 현황
-          </h3>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', color: 'var(--color-primary)' }}>
-                  <th style={{ padding: '8px' }}>닉네임</th>
-                  <th style={{ padding: '8px' }}>이메일</th>
-                  <th style={{ padding: '8px' }}>급수</th>
-                  <th style={{ padding: '8px' }}>누적 XP</th>
-                  <th style={{ padding: '8px' }}>역할</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    <td style={{ padding: '8px', fontWeight: 'bold' }}>{u.username}</td>
-                    <td style={{ padding: '8px', color: 'var(--color-text-muted)' }}>{u.email}</td>
-                    <td style={{ padding: '8px' }}>{u.currentLevel}</td>
-                    <td style={{ padding: '8px', color: 'var(--color-secondary)', fontWeight: 'bold' }}>{u.xp}</td>
-                    <td style={{ padding: '8px' }}>
-                      <span style={{
-                        fontSize: '0.7rem',
-                        padding: '2px 6px',
-                        borderRadius: '8px',
-                        background: u.role === 'admin' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(4, 120, 87, 0.1)',
-                        color: u.role === 'admin' ? '#ef4444' : 'var(--color-primary)',
-                        fontWeight: 'bold'
-                      }}>
-                        {u.role}
-                      </span>
-                    </td>
+        {/* Left Side: Users list & Selected User Study Logs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass-card" style={{ padding: '16px' }}>
+            <h3 className="font-display" style={{ fontSize: '1.1rem', color: 'var(--color-primary)', marginBottom: '4px' }}>
+              👥 수련생 계정 세부 현황
+            </h3>
+            <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: '0 0 12px 0' }}>
+              수련생을 클릭하면 상세 수련 기록 로그가 하단에 나타납니다.
+            </p>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', color: 'var(--color-primary)' }}>
+                    <th style={{ padding: '8px' }}>닉네임</th>
+                    <th style={{ padding: '8px' }}>이메일</th>
+                    <th style={{ padding: '8px' }}>급수</th>
+                    <th style={{ padding: '8px' }}>누적 XP</th>
+                    <th style={{ padding: '8px' }}>역할</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {users.map((u, i) => (
+                    <tr 
+                      key={i} 
+                      onClick={() => setSelectedUser(u)}
+                      style={{ 
+                        borderBottom: '1px solid var(--color-border)',
+                        cursor: 'pointer',
+                        background: selectedUser?.username === u.username ? 'rgba(4, 120, 87, 0.05)' : 'transparent',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <td style={{ padding: '8px', fontWeight: 'bold' }}>{u.username}</td>
+                      <td style={{ padding: '8px', color: 'var(--color-text-muted)' }}>{u.email}</td>
+                      <td style={{ padding: '8px' }}>{u.currentLevel}</td>
+                      <td style={{ padding: '8px', color: 'var(--color-secondary)', fontWeight: 'bold' }}>{u.xp}</td>
+                      <td style={{ padding: '8px' }}>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          padding: '2px 6px',
+                          borderRadius: '8px',
+                          background: u.role === 'admin' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(4, 120, 87, 0.1)',
+                          color: u.role === 'admin' ? '#ef4444' : 'var(--color-primary)',
+                          fontWeight: 'bold'
+                        }}>
+                          {u.role}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {/* Selected User's Study History logs */}
+          {selectedUser && (
+            <div className="glass-card" style={{ padding: '16px' }}>
+              <h3 className="font-display" style={{ fontSize: '1.1rem', color: 'var(--color-primary)', marginBottom: '8px' }}>
+                📜 [{selectedUser.username}] 수련생 학습 기록 로그
+              </h3>
+              {!selectedUser.studyHistory || selectedUser.studyHistory.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '30px 10px',
+                  color: 'var(--color-text-muted)',
+                  fontSize: '0.82rem'
+                }}>
+                  아직 기록된 수련 로그가 없습니다.
+                </div>
+              ) : (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  maxHeight: '220px',
+                  overflowY: 'auto',
+                  paddingRight: '4px'
+                }}>
+                  {selectedUser.studyHistory.map((log) => {
+                    const dateStr = new Date(log.timestamp).toLocaleString('ko-KR', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                    return (
+                      <div
+                        key={log.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '0.78rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{
+                              backgroundColor: log.type === '스피드 퀴즈' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                              color: log.type === '스피드 퀴즈' ? 'var(--color-primary)' : '#2563eb',
+                              padding: '1px 5px',
+                              borderRadius: '3px',
+                              fontSize: '0.65rem',
+                              fontWeight: 'bold'
+                            }}>
+                              {log.type}
+                            </span>
+                            <span style={{ fontWeight: 'bold', color: '#374151' }}>{log.detail}</span>
+                          </div>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>{dateStr}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', fontSize: '0.72rem', fontWeight: 'bold' }}>
+                          {log.goldEarned > 0 && <span style={{ color: '#d97706' }}>+{log.goldEarned}G</span>}
+                          {log.xpEarned > 0 && <span style={{ color: 'var(--color-primary)' }}>+{log.xpEarned}XP</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Side: Feedbacks Detail Inspector */}

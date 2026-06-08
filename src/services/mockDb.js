@@ -194,12 +194,16 @@ const DEFAULT_PROFILE = {
   hearts: 5,
   streak: 0,
   streakLastActive: null,
+  flashcardsToday: 0,
+  lastActiveDate: null,
   goal: '8급',
   inventory: [],
   wrongCount: {},
   mastered: [],
   currentLevel: '8급',
-  soundOn: true
+  soundOn: true,
+  studyHistory: [],
+  wrongHanjaNotes: {}
 };
 
 const MOCK_COMPETITORS = [
@@ -210,26 +214,7 @@ const MOCK_COMPETITORS = [
   { username: '방랑시인 김삿갓', xp: 450, rankName: '유생 (儒生)', goal: '8급' }
 ];
 
-const INITIAL_FEEDBACKS = [
-  {
-    id: 'f1',
-    category: '기술적 오류',
-    title: '모바일 환경에서 캔버스 터치 인식이 간헐적으로 끊깁니다.',
-    body: '사파리 브라우저에서 스크롤을 내리다 터치 드래그를 시도하면 캔버스 그리기 선이 끊깁니다.',
-    author: '어려운한자',
-    createdAt: '2026-06-01',
-    reply: '안녕하세요. iOS 터치 스크롤 방지 로직(touch-action: none)이 누락된 버그가 확인되어 긴급 패치하였습니다. 이용에 불편을 드려 죄송합니다.'
-  },
-  {
-    id: 'f2',
-    category: '기능 건의',
-    title: '1급 배정한자도 추가해주실 수 있나요?',
-    body: '수준별 8급부터 준6급까지 있는데 나중에는 1급 한자도 복습할 수 있는 기능이 있으면 정말 좋겠습니다.',
-    author: '선비지망생',
-    createdAt: '2026-06-02',
-    reply: null
-  }
-];
+const INITIAL_FEEDBACKS = [];
 
 export const getProfile = () => {
   const data = localStorage.getItem('hanja_profile');
@@ -259,7 +244,14 @@ export const getFeedbackList = () => {
     localStorage.setItem('hanja_feedbacks', JSON.stringify(INITIAL_FEEDBACKS));
     return INITIAL_FEEDBACKS;
   }
-  return JSON.parse(data);
+  let feedbacks = JSON.parse(data);
+  // Filter out hardcoded dummy feedbacks if present in LocalStorage
+  const hasDummy = feedbacks.some(f => f.id === 'f1' || f.id === 'f2');
+  if (hasDummy) {
+    feedbacks = feedbacks.filter(f => f.id !== 'f1' && f.id !== 'f2');
+    localStorage.setItem('hanja_feedbacks', JSON.stringify(feedbacks));
+  }
+  return feedbacks;
 };
 
 export const createFeedback = (category, title, body, author) => {
@@ -305,17 +297,11 @@ export const getAdminUsersList = () => {
     goal: profile.goal,
     currentLevel: profile.currentLevel,
     rankName: rank.name,
-    role: profile.role
+    role: profile.role,
+    studyHistory: profile.studyHistory || []
   };
 
-  const list = [
-    userRow,
-    { username: '어려운한자', email: 'hardhanja@naver.com', xp: 6200, streak: 12, goal: '준6급', currentLevel: '준6급', rankName: '대제학 (大提學)', role: 'user' },
-    { username: '선비지망생', email: 'scholar@daum.net', xp: 1850, streak: 8, goal: '7급', currentLevel: '7급', rankName: '장원급제 (壯元及第)', role: 'user' },
-    { username: '한자천재', email: 'genius12@gmail.com', xp: 550, streak: 3, goal: '8급', currentLevel: '8급', rankName: '진사 (進士)', role: 'user' }
-  ];
-
-  return list;
+  return [userRow];
 };
 
 // Update Streak daily check-in logic
@@ -350,11 +336,10 @@ export const checkIn = () => {
   
   profile.streak = streak;
   profile.streakLastActive = today;
-  profile.gold += 50;
   profile.xp += 30;
   
   saveProfile(profile);
-  return { success: true, streak, goldBonus: 50, xpBonus: 30, message };
+  return { success: true, streak, goldBonus: 0, xpBonus: 30, message };
 };
 
 export const getLeaderboard = () => {
@@ -454,7 +439,6 @@ export const updateAnswerStats = (charId, isCorrect, levelId) => {
       profile.mastered.push(charId);
     }
     profile.xp += 10;
-    profile.gold += 5;
   } else {
     wrongCount[charId] = (wrongCount[charId] || 0) + 1;
     profile.hearts = Math.max(0, profile.hearts - 1);
@@ -472,3 +456,59 @@ export const awardActiveStudyXp = () => {
   saveProfile(profile);
   return 15;
 };
+
+// Add learning log history
+export const addStudyLog = (type, detail, goldEarned, xpEarned) => {
+  const profile = getProfile();
+  const newLog = {
+    id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+    timestamp: new Date().toISOString(),
+    type,
+    detail,
+    goldEarned,
+    xpEarned
+  };
+  profile.studyHistory = [newLog, ...(profile.studyHistory || [])].slice(0, 100);
+  saveProfile(profile);
+  return profile;
+};
+
+// Add Hanja to incorrect notes
+export const addWrongHanja = (hanja) => {
+  if (!hanja || !hanja.id) return;
+  const profile = getProfile();
+  const wrongHanjaNotes = profile.wrongHanjaNotes || {};
+  
+  if (wrongHanjaNotes[hanja.id]) {
+    wrongHanjaNotes[hanja.id].count = (wrongHanjaNotes[hanja.id].count || 0) + 1;
+    wrongHanjaNotes[hanja.id].lastWrongTime = new Date().toISOString();
+  } else {
+    wrongHanjaNotes[hanja.id] = {
+      id: hanja.id,
+      char: hanja.char,
+      meaning: hanja.meaning,
+      sound: hanja.sound,
+      fullMeaning: hanja.fullMeaning,
+      level: hanja.level || '알수없음',
+      count: 1,
+      lastWrongTime: new Date().toISOString()
+    };
+  }
+  
+  profile.wrongHanjaNotes = wrongHanjaNotes;
+  saveProfile(profile);
+  return profile;
+};
+
+// Remove Hanja from incorrect notes (mastered/learned)
+export const removeWrongHanja = (hanjaId) => {
+  const profile = getProfile();
+  const wrongHanjaNotes = profile.wrongHanjaNotes || {};
+  if (wrongHanjaNotes[hanjaId]) {
+    delete wrongHanjaNotes[hanjaId];
+  }
+  profile.wrongHanjaNotes = wrongHanjaNotes;
+  saveProfile(profile);
+  return profile;
+};
+

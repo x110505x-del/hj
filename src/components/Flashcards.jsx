@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Volume2, VolumeX, ArrowLeft, RefreshCw, Play
 import { getHanjaByLevel, HANJA_RAW_DATA } from '../services/hanjaDb';
 import { speakKorean, cancelSpeech, unlockTtsAudio, preloadKoreanSpeech } from '../utils/tts';
 
-export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
+export default function Flashcards({ level, onBack, soundOn, onToggleSound, onStudyCard }) {
   const [shuffledList, setShuffledList] = useState([]);
   const [learningPhase, setLearningPhase] = useState('start'); // 'start' | 'learn' | 'transition' | 'review' | 'complete'
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -21,6 +21,15 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound }) {
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
+
+  // Track study progress when card changes
+  useEffect(() => {
+    if (learningPhase === 'learn' || learningPhase === 'review') {
+      if (onStudyCard) {
+        onStudyCard();
+      }
+    }
+  }, [currentIndex, learningPhase]);
 
   const clearAllTimers = () => {
     if (timer1Ref.current) clearTimeout(timer1Ref.current);
