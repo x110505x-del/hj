@@ -229,6 +229,36 @@ export const getProfile = () => {
 export const saveProfile = (profile) => {
   localStorage.setItem('hanja_profile', JSON.stringify(profile));
   window.dispatchEvent(new Event('profileUpdated'));
+
+  // Update local registered users list for Leaderboard rankings
+  if (profile && profile.isLoggedIn && profile.username) {
+    const localUsersStr = localStorage.getItem('hanja_local_users');
+    let localUsers = localUsersStr ? JSON.parse(localUsersStr) : [];
+    
+    const existingIndex = localUsers.findIndex(u => 
+      (profile.email && u.email === profile.email) || u.username === profile.username
+    );
+    
+    const userSummary = {
+      username: profile.username,
+      email: profile.email || 'guest@hanja.com',
+      gold: profile.gold,
+      xp: profile.xp,
+      rankName: getRankByXp(profile.xp).name,
+      role: profile.role || 'user',
+      streak: profile.streak || 1,
+      goal: profile.goal || '8급',
+      currentLevel: profile.currentLevel || '8급',
+      studyHistory: profile.studyHistory || []
+    };
+    
+    if (existingIndex !== -1) {
+      localUsers[existingIndex] = userSummary;
+    } else {
+      localUsers.push(userSummary);
+    }
+    localStorage.setItem('hanja_local_users', JSON.stringify(localUsers));
+  }
   
   // Asynchronously synchronize with the cloud database if logged in
   if (profile && profile.isLoggedIn && profile.email) {
@@ -285,23 +315,32 @@ export const addFeedbackReply = (feedbackId, replyText) => {
 
 // --- ADMIN USERS AUDIT ---
 export const getAdminUsersList = () => {
-  // Combine current profile status with other mock accounts
-  const profile = getProfile();
-  const rank = getRankByXp(profile.xp);
+  const localUsersStr = localStorage.getItem('hanja_local_users');
+  let localUsers = localUsersStr ? JSON.parse(localUsersStr) : [];
   
-  const userRow = {
-    username: profile.username,
-    email: profile.email || 'guest@hanja.com',
-    xp: profile.xp,
-    streak: profile.streak,
-    goal: profile.goal,
-    currentLevel: profile.currentLevel,
-    rankName: rank.name,
-    role: profile.role,
-    studyHistory: profile.studyHistory || []
-  };
+  const profile = getProfile();
+  // Ensure the current user is represented if logged in
+  if (profile && profile.isLoggedIn && profile.username) {
+    const hasUser = localUsers.some(u => 
+      (profile.email && u.email === profile.email) || u.username === profile.username
+    );
+    if (!hasUser) {
+      localUsers.push({
+        username: profile.username,
+        email: profile.email || 'guest@hanja.com',
+        gold: profile.gold,
+        xp: profile.xp,
+        streak: profile.streak || 1,
+        goal: profile.goal || '8급',
+        currentLevel: profile.currentLevel || '8급',
+        rankName: getRankByXp(profile.xp).name,
+        role: profile.role || 'user',
+        studyHistory: profile.studyHistory || []
+      });
+    }
+  }
 
-  return [userRow];
+  return localUsers;
 };
 
 // Update Streak daily check-in logic
@@ -344,46 +383,31 @@ export const checkIn = () => {
 
 export const getLeaderboard = () => {
   const profile = getProfile();
-  const currentRank = getRankByXp(profile.xp);
   
-  const userEntry = {
-    username: profile.username + ' (나)',
-    xp: profile.xp,
-    gold: profile.gold,
-    rankName: currentRank.name,
-    isUser: true
-  };
+  const localUsersStr = localStorage.getItem('hanja_local_users');
+  let localUsers = localUsersStr ? JSON.parse(localUsersStr) : [];
   
-  const now = Date.now();
-  const lastUpdate = localStorage.getItem('competitors_last_update');
-  let competitors = MOCK_COMPETITORS;
-  
-  const savedCompetitors = localStorage.getItem('competitors_data');
-  if (savedCompetitors) {
-    competitors = JSON.parse(savedCompetitors);
+  if (profile && profile.isLoggedIn && profile.username) {
+    const hasUser = localUsers.some(u => 
+      (profile.email && u.email === profile.email) || u.username === profile.username
+    );
+    if (!hasUser) {
+      localUsers.push({
+        username: profile.username,
+        email: profile.email || 'guest@hanja.com',
+        gold: profile.gold,
+        xp: profile.xp,
+        rankName: getRankByXp(profile.xp).name
+      });
+    }
   }
+
+  localUsers.sort((a, b) => b.gold - a.gold);
   
-  if (!lastUpdate || now - parseInt(lastUpdate) > 60000) {
-    competitors = competitors.map(comp => {
-      const addedXp = Math.floor(Math.random() * 15);
-      const addedGold = Math.floor(Math.random() * 5);
-      const newXp = comp.xp + addedXp;
-      const newGold = (comp.gold || 0) + addedGold;
-      return {
-        ...comp,
-        xp: newXp,
-        gold: newGold,
-        rankName: getRankByXp(newXp).name
-      };
-    });
-    localStorage.setItem('competitors_data', JSON.stringify(competitors));
-    localStorage.setItem('competitors_last_update', now.toString());
-  }
-  
-  const combined = [...competitors, userEntry];
-  combined.sort((a, b) => b.gold - a.gold);
-  
-  return combined;
+  return localUsers.map((u) => ({
+    ...u,
+    isUser: profile.isLoggedIn && u.username === profile.username
+  }));
 };
 
 // Purchase shop items

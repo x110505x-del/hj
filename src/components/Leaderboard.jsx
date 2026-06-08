@@ -17,25 +17,26 @@ export default function Leaderboard({ profile }) {
   }, [profile.gold]);
 
   return (
-    <div style={{ maxWidth: '550px', margin: '30px auto', width: '100%', padding: '0 20px' }}>
-      <div className="glass-card">
+    <div style={{ width: '100%', marginTop: '24px' }}>
+      <div className="glass-card" style={{ padding: '16px' }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '20px',
+          marginBottom: '12px',
           borderBottom: '2px solid var(--color-border)',
-          paddingBottom: '12px'
+          paddingBottom: '8px'
         }}>
           <h3 className="font-display" style={{
-            fontSize: '1.4rem',
+            fontSize: '1.1rem',
             color: 'var(--color-primary)',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            margin: 0
           }}>
-            <Trophy size={22} fill="var(--color-gold)" style={{ color: 'var(--color-gold)' }} />
-            조선 팔도 한자 수련 랭킹
+            <Trophy size={18} fill="var(--color-gold)" style={{ color: 'var(--color-gold)' }} />
+            수련생 실시간 골드 랭킹 (더미 제외)
           </h3>
           <button 
             onClick={refreshData}
@@ -47,87 +48,94 @@ export default function Leaderboard({ profile }) {
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              fontSize: '0.85rem'
+              fontSize: '0.75rem'
             }}
           >
-            <RefreshCw size={14} /> 새로고침
+            <RefreshCw size={12} /> 새로고침
           </button>
         </div>
 
-        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-          💡 학습을 진행하여 획득한 누적 골드(Gold) 기준 실시간 랭킹입니다. 
-          경쟁 수련자들도 실시간으로 정진하며 순위가 수시로 바뀝니다!
+        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
+          💡 실제 가입하여 정진 중인 수련생들의 누적 골드 기준 순위표입니다. 
+          학습과 도전 과제를 완수하여 골드를 획득하고 순위를 높여 보세요!
         </p>
 
         {/* List of Rankers */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {boardData.map((item, idx) => {
-            const isUser = item.isUser;
-            const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {boardData.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+              아직 랭킹에 등록된 수련생이 없습니다. 로그인을 진행해 주세요!
+            </div>
+          ) : (
+            boardData.map((item, idx) => {
+              const isUser = item.isUser;
+              const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
 
-            return (
-              <div
-                key={item.username}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  borderRadius: 'var(--border-radius-md)',
-                  border: isUser 
-                    ? '3px solid var(--color-primary)' 
-                    : '1px solid var(--color-border)',
-                  background: isUser
-                    ? (profile.mode === 'kids' ? '#fffbeb' : 'rgba(99, 102, 241, 0.15)')
-                    : 'var(--bg-card)',
-                  boxShadow: isUser ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-                  transform: isUser ? 'scale(1.02)' : 'none',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  {/* Rank number / medal */}
-                  <span style={{
-                    width: '30px',
-                    textAlign: 'center',
-                    fontSize: idx < 3 ? '1.4rem' : '1rem',
-                    fontWeight: 'bold',
-                    color: 'var(--color-text-muted)'
-                  }}>
-                    {rankIcon}
-                  </span>
-
-                  {/* Profile Name & Title */}
-                  <div>
-                    <div style={{
+              return (
+                <div
+                  key={item.username}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--border-radius-md)',
+                    border: isUser 
+                      ? '2px solid var(--color-primary)' 
+                      : '1px solid var(--color-border)',
+                    background: isUser
+                      ? (profile?.mode === 'kids' ? '#fffbeb' : 'rgba(99, 102, 241, 0.08)')
+                      : 'var(--bg-card)',
+                    boxShadow: isUser ? 'var(--shadow-sm)' : 'none',
+                    transform: isUser ? 'scale(1.01)' : 'none',
+                    transition: 'all 0.2s',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {/* Rank number / medal */}
+                    <span style={{
+                      width: '24px',
+                      textAlign: 'center',
+                      fontSize: idx < 3 ? '1.15rem' : '0.85rem',
                       fontWeight: 'bold',
-                      fontSize: '1.05rem',
-                      color: isUser ? 'var(--color-primary)' : 'var(--color-text-main)'
+                      color: 'var(--color-text-muted)'
                     }}>
-                      {item.username}
-                    </div>
-                    <div style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--color-text-muted)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      marginTop: '2px'
-                    }}>
-                      <Award size={12} />
-                      <span>{item.rankName}</span>
+                      {rankIcon}
+                    </span>
+
+                    {/* Profile Name & Title */}
+                    <div>
+                      <div style={{
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                        color: isUser ? 'var(--color-primary)' : 'var(--color-text-main)'
+                      }}>
+                        {item.username} {isUser && <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 'normal' }}>(나)</span>}
+                      </div>
+                      <div style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--color-text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        marginTop: '1px'
+                      }}>
+                        <Award size={10} />
+                        <span>{item.rankName}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Gold display */}
-                <div style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                  <span style={{ fontSize: '1.1rem', color: '#d97706' }}>{item.gold}</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginLeft: '2px' }}>G</span>
+                  {/* Gold display */}
+                  <div style={{ textAlign: 'right', fontWeight: 'bold' }}>
+                    <span style={{ fontSize: '0.95rem', color: '#d97706' }}>{item.gold}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '2px' }}>G</span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </div>
