@@ -400,7 +400,9 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     setFallingHanja((prev) => {
       const nextFalling = [...prev, newFalling];
       
-      // Defend against State Deadlock by pushing side effects into the next event loop tick
+      // ⚠️ CRITICAL GUARDRAIL: DO NOT REMOVE OR CHANGE setTimeout(..., 0).
+      // - Updating setBottomCards (via ensureHanjaInBottomCards) synchronously inside the setFallingHanja callback
+      //   triggers a React 18 Concurrent Render deadlock / thread freeze, locking falling characters at Y=0.
       setTimeout(() => {
         const shouldShuffle = currentSpawnNum % 3 === 0;
         ensureHanjaInBottomCards(nextFalling, shouldShuffle);

@@ -25,9 +25,9 @@ export default function Leaderboard({ profile }) {
       const data = await fetchGlobalLeaderboard();
       const myId = profile.isLoggedIn && profile.email ? obfuscateEmail(profile.email) : '';
 
-      // Mark and override current user's entry with their latest local profile gold/xp
+      // ⚠️ CRITICAL GUARDRAIL: Match by hashed email ID (myId) instead of nickname.
+      // - Relying only on username causes duplicate entries if the user edits their nickname.
       let mapped = data.map(u => {
-        // Match by hashed email ID (which is persistent) or fallback to username
         const isUser = profile.isLoggedIn && (
           (u.id && u.id === myId) || 
           (u.username === profile.username)

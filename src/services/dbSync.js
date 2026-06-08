@@ -51,6 +51,8 @@ export async function saveProfileToCloud(profile) {
       lastUpdated: new Date().toISOString()
     };
 
+    // ⚠️ CRITICAL GUARDRAIL: Keep Content-Type as 'text/plain'.
+    // Changing it to 'application/json' triggers CORS preflight (OPTIONS) which is rejected by kvdb.io.
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -182,7 +184,9 @@ export async function updateGlobalLeaderboard(profile) {
     currentBoard.sort((a, b) => b.gold - a.gold);
     currentBoard = currentBoard.slice(0, 100);
     
-    // 4. Save back to cloud wrapping inside an object
+    // ⚠️ CRITICAL GUARDRAIL: Keep Content-Type as 'text/plain' and keep the object wrapper { board: [...] }.
+    // - text/plain bypasses CORS OPTIONS preflight block.
+    // - wrapping as an object prevents kvdb.io JSON array parsing errors.
     const postRes = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
