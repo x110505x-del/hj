@@ -422,7 +422,8 @@ export default function App() {
 
       {/* Footnote */}
       <footer className="footer-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        <span>&copy; 2026 한자 마스터. All Rights Reserved. | 급수별 한자 게임 수련장 🏆</span>
+        <span className="desktop-footer-text">&copy; 2026 한자 마스터. All Rights Reserved. | 급수별 한자 게임 수련장 🏆</span>
+        <span className="mobile-footer-text">&copy; 2026 한자 마스터.</span>
         {profile && profile.isLoggedIn && profile.email === 'x110505x@gmail.com' && (
           <>
             <span style={{ color: 'var(--color-border)' }}>|</span>

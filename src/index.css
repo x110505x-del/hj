@@ -599,6 +599,58 @@ body {
     font-size: 1.7rem;
     line-height: 1.35;
   }
+  
+  .hero-subtitle {
+    font-size: 0.75rem !important;
+    white-space: nowrap;
+    letter-spacing: -0.3px;
+  }
+  
+  .mobile-welcome-text {
+    font-size: 0.82rem !important;
+    white-space: nowrap;
+  }
+  
+  .mobile-status-text {
+    font-size: 0.68rem !important;
+    white-space: nowrap;
+    letter-spacing: -0.5px;
+  }
+  
+  .mobile-task-text {
+    font-size: 0.7rem !important;
+    white-space: nowrap;
+    letter-spacing: -0.4px;
+  }
+  
+  .mobile-analysis-title {
+    font-size: 1.05rem !important;
+    white-space: nowrap;
+  }
+  
+  .mobile-tab-btn {
+    font-size: 0.74rem !important;
+    padding: 6px 10px !important;
+    white-space: nowrap;
+  }
+
+  .footer-container span {
+    font-size: 0.65rem !important;
+    white-space: nowrap;
+    letter-spacing: -0.3px;
+  }
+
+  .desktop-footer-text {
+    display: none !important;
+  }
+
+  .mobile-footer-text {
+    display: inline-block !important;
+  }
+}
+
+.mobile-footer-text {
+  display: none;
 }
 
 

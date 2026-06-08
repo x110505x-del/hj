@@ -63,7 +63,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
         }}>
           한자 마스터<br/>야! 너도 할 수 있어!
         </h1>
-        <p style={{
+        <p className="hero-subtitle" style={{
           fontSize: '1rem',
           color: 'var(--color-text-muted)',
           margin: 0
@@ -173,7 +173,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 </div>
               ) : (
                 <>
-                  <strong style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
+                  <strong className="mobile-welcome-text" style={{ fontSize: '1rem', color: 'var(--color-primary)' }}>
                     {profile.username} 님, 수련을 환영합니다!
                   </strong>
                   <button
@@ -226,7 +226,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 <span>📧 이메일 프로필</span>
               </div>
             )}
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>
+            <p className="mobile-status-text" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>
               연속 학습: <strong>{profile.streak}일</strong> | 골드: <strong>{profile.gold}G</strong> | 현재 등급: <strong>{getRankByXp(profile.xp).name}</strong>
             </p>
             <button
@@ -284,7 +284,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           <ul style={{ margin: 0, paddingLeft: '16px', lineHeight: '1.4' }}>
             <li>스피드 퀴즈 1판 완료</li>
             <li>한자비 맞추기 게임 1판 완료</li>
-            <li>플래시 카드 50자 학습 (오늘 학습량: <strong>{profile ? profile.flashcardsToday || 0 : 0}</strong> / 50자)</li>
+            <li className="mobile-task-text">플래시 카드 50자 학습 (오늘 학습량: <strong>{profile ? profile.flashcardsToday || 0 : 0}</strong> / 50자)</li>
           </ul>
           <div style={{ 
             marginTop: '8px', 
@@ -576,7 +576,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
         textAlign: 'left',
         boxSizing: 'border-box'
       }}>
-        <h2 style={{
+        <h2 className="mobile-analysis-title" style={{
           fontSize: '1.25rem',
           fontWeight: 'bold',
           color: '#1f2937',
@@ -597,6 +597,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
         }}>
           <button
             onClick={() => setActiveTab('logs')}
+            className="mobile-tab-btn"
             style={{
               padding: '8px 16px',
               border: 'none',
@@ -614,6 +615,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           </button>
           <button
             onClick={() => setActiveTab('wrong')}
+            className="mobile-tab-btn"
             style={{
               padding: '8px 16px',
               border: 'none',
