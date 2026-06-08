@@ -53,8 +53,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
       
       {/* Brand Header */}
       <div>
-        <h1 className="font-display" style={{
-          fontSize: '2.5rem',
+        <h1 className="font-display hero-title" style={{
           margin: '0 0 10px 0',
           fontWeight: 'bold',
           background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',

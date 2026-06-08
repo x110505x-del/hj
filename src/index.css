@@ -587,5 +587,19 @@ body {
   }
 }
 
+/* Hero Title responsive scaling */
+.hero-title {
+  font-size: 2.6rem;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.7rem;
+    line-height: 1.35;
+  }
+}
+
 
 

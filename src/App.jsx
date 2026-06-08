@@ -375,62 +375,82 @@ export default function App() {
           />
         )}
 
-        {currentScreen === 'admin' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ textAlign: 'left', maxWidth: '950px', margin: '0 auto', width: '100%', padding: '0 20px', boxSizing: 'border-box' }}>
-              <button
-                onClick={() => setCurrentScreen('selector')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '1.5px solid var(--color-border)',
-                  backgroundColor: '#ffffff',
-                  fontSize: '0.85rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
-              >
-                ← 대시보드로 돌아가기
+        {currentScreen === 'admin' ? (
+          profile && profile.isLoggedIn && profile.email === 'x110505x@gmail.com' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ textAlign: 'left', maxWidth: '950px', margin: '0 auto', width: '100%', padding: '0 20px', boxSizing: 'border-box' }}>
+                <button
+                  onClick={() => setCurrentScreen('selector')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1.5px solid var(--color-border)',
+                    backgroundColor: '#ffffff',
+                    fontSize: '0.85rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
+                >
+                  ← 대시보드로 돌아가기
+                </button>
+              </div>
+              <AdminPanel profile={profile} />
+            </div>
+          ) : (
+            <div className="glass-card" style={{ maxWidth: '480px', margin: '60px auto', textAlign: 'center', padding: '40px 24px' }}>
+              <span style={{ fontSize: '3rem' }}>🔒</span>
+              <h2 className="font-display" style={{ color: 'var(--color-accent-pink)', fontSize: '1.5rem', margin: '16px 0 8px 0' }}>
+                접근 권한이 제한되었습니다
+              </h2>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.92rem', marginBottom: '24px', lineHeight: '1.5' }}>
+                수련원 관리자 통제실은 지정된 개발자 계정<br/>
+                <strong>(x110505x@gmail.com)</strong>으로 로그인했을 때만 접근하실 수 있습니다.
+              </p>
+              <button onClick={() => setCurrentScreen('selector')} className="theme-btn theme-btn-primary" style={{ width: '100%' }}>
+                대시보드로 돌아가기
               </button>
             </div>
-            <AdminPanel profile={profile} />
-          </div>
-        )}
+          )
+        ) : null}
       </main>
 
       {/* Footnote */}
       <footer className="footer-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         <span>&copy; 2026 한자 마스터. All Rights Reserved. | 급수별 한자 게임 수련장 🏆</span>
-        <span style={{ color: 'var(--color-border)' }}>|</span>
-        <button
-          onClick={() => setCurrentScreen('admin')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--color-text-muted)',
-            fontSize: 'inherit',
-            cursor: 'pointer',
-            padding: 0,
-            textDecoration: 'underline',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '3px'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
-          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
-        >
-          🛡️ 통제실
-        </button>
+        {profile && profile.isLoggedIn && profile.email === 'x110505x@gmail.com' && (
+          <>
+            <span style={{ color: 'var(--color-border)' }}>|</span>
+            <button
+              onClick={() => setCurrentScreen('admin')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-text-muted)',
+                fontSize: 'inherit',
+                cursor: 'pointer',
+                padding: 0,
+                textDecoration: 'underline',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+            >
+              🛡️ 통제실
+            </button>
+          </>
+        )}
       </footer>
       
-      {/* Floating global feedback widget */}
-      <FeedbackWidget />
+      {/* Floating global feedback widget - Shown ONLY on main Selector Dashboard */}
+      {currentScreen === 'selector' && <FeedbackWidget />}
 
       {/* 🔐 Authentication Modal Overlay */}
       {isLoginOpen && (
