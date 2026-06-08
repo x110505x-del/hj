@@ -39,6 +39,7 @@ export async function saveProfileToCloud(profile) {
 
     const payload = {
       username: profile.username,
+      email: profile.email, // Save real email for admin announcements/notifications
       gold: profile.gold,
       streak: profile.streak,
       xp: profile.xp,
