@@ -54,7 +54,7 @@ export async function saveProfileToCloud(profile) {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'text/plain'
       },
       body: JSON.stringify(payload)
     });
@@ -121,6 +121,9 @@ export async function fetchGlobalLeaderboard() {
     const response = await fetch(url);
     if (!response.ok) return [];
     const data = await response.json();
+    if (data && Array.isArray(data.board)) {
+      return data.board;
+    }
     return Array.isArray(data) ? data : [];
   } catch (e) {
     console.error('Failed to fetch global leaderboard', e);
@@ -142,7 +145,11 @@ export async function updateGlobalLeaderboard(profile) {
     const getRes = await fetch(url);
     if (getRes.ok) {
       const data = await getRes.json();
-      if (Array.isArray(data)) currentBoard = data;
+      if (data && Array.isArray(data.board)) {
+        currentBoard = data.board;
+      } else if (Array.isArray(data)) {
+        currentBoard = data;
+      }
     }
     
     // 2. Update my score
@@ -175,13 +182,13 @@ export async function updateGlobalLeaderboard(profile) {
     currentBoard.sort((a, b) => b.gold - a.gold);
     currentBoard = currentBoard.slice(0, 100);
     
-    // 4. Save back to cloud
-    await fetch(url, {
+    // 4. Save back to cloud wrapping inside an object
+    const postRes = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(currentBoard)
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ board: currentBoard })
     });
-    return true;
+    return postRes.ok;
   } catch (e) {
     console.error('Failed to update global leaderboard', e);
     return false;
