@@ -402,9 +402,38 @@ export const getLeaderboard = () => {
     }
   }
 
-  localUsers.sort((a, b) => b.gold - a.gold);
+  // --- Dynamic Mock Competitors Logic ---
+  const now = Date.now();
+  const lastUpdate = localStorage.getItem('competitors_last_update');
+  let competitors = MOCK_COMPETITORS;
   
-  return localUsers.map((u) => ({
+  const savedCompetitors = localStorage.getItem('competitors_data');
+  if (savedCompetitors) {
+    competitors = JSON.parse(savedCompetitors);
+  }
+  
+  if (!lastUpdate || now - parseInt(lastUpdate) > 60000) {
+    competitors = competitors.map(comp => {
+      const addedXp = Math.floor(Math.random() * 15);
+      const addedGold = Math.floor(Math.random() * 6); // Rivals earn gold to stay competitive!
+      const newXp = comp.xp + addedXp;
+      const newGold = (comp.gold || 0) + addedGold;
+      return {
+        ...comp,
+        xp: newXp,
+        gold: newGold,
+        rankName: getRankByXp(newXp).name
+      };
+    });
+    localStorage.setItem('competitors_data', JSON.stringify(competitors));
+    localStorage.setItem('competitors_last_update', now.toString());
+  }
+
+  // Combine real users with active virtual competitors
+  const combined = [...localUsers, ...competitors];
+  combined.sort((a, b) => b.gold - a.gold);
+  
+  return combined.map((u) => ({
     ...u,
     isUser: profile.isLoggedIn && u.username === profile.username
   }));

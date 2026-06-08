@@ -65,8 +65,8 @@ export default function Leaderboard({ profile }) {
         </div>
 
         <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
-          💡 실제 가입하여 정진 중인 수련생들의 누적 골드 기준 순위표입니다. 
-          학습과 도전 과제를 완수하여 골드를 획득하고 순위를 높여 보세요!
+          💡 조선 팔도 전역의 수련생들과 누적 골드 획득량을 경쟁하는 실시간 랭킹입니다. 
+          학습과 도전 과제를 완수하고, 나보다 순위가 높은 라이벌들을 추월하여 1위를 탈환해 보세요!
         </p>
 
         {/* List of Rankers */}

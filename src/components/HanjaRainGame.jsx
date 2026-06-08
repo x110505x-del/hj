@@ -435,6 +435,10 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
       osc.start();
       osc.stop(ctx.currentTime + 0.16);
+
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 200);
     } catch (e) {
       console.warn("AudioContext failed", e);
     }
@@ -456,6 +460,10 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
       osc.start(now);
       osc.stop(now + 0.35);
+
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 400);
     } catch (e) {
       console.warn("Miss sound failed", e);
     }
