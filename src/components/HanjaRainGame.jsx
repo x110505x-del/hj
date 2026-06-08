@@ -174,69 +174,73 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       }
       // 1. Update falling character positions
       setFallingHanja((prev) => {
+        if (prev.length === 0) return prev; // Optimize: Do nothing if no Hanja
+
         let reachedBottomCount = 0;
+        const hitItems = [];
         const updated = prev.map((item) => {
           const nextY = item.y + item.speed;
           if (nextY >= 82) { // 82% is the bottom floor limit
             reachedBottomCount++;
+            hitItems.push({ ...item, y: nextY, hitFloor: true });
             return { ...item, y: nextY, hitFloor: true };
           }
           return { ...item, y: nextY };
         });
 
-        // Filter out characters that hit the floor
         const remaining = updated.filter((item) => !item.hitFloor);
 
-        // Check if level cleared (win condition)
-        if (hasStarted && spawnQueueRef.current.length === 0 && remaining.length === 0) {
-          setLives((currentLives) => {
-            if (currentLives > 0) {
-              setGameState('victory');
-            }
-            return currentLives;
-          });
-        }
-
-        // Handle floor hits
-        if (reachedBottomCount > 0) {
-          // Record floor hit Hanja to wrong note
-          const hitItems = updated.filter((item) => item.y >= 82);
-          hitItems.forEach((item) => {
-            addWrongHanja({
-              id: item.id,
-              char: item.char,
-              meaning: item.meaning,
-              sound: item.sound,
-              fullMeaning: item.fullMeaning,
-              level: level
+        // Safe Side-Effect Execution: Push out of the render phase
+        if (hitItems.length > 0) {
+          setTimeout(() => {
+            // Record floor hit Hanja to wrong note
+            hitItems.forEach((item) => {
+              addWrongHanja({
+                id: item.id,
+                char: item.char,
+                meaning: item.meaning,
+                sound: item.sound,
+                fullMeaning: item.fullMeaning,
+                level: level
+              });
             });
-          });
 
-          setLives((prevLives) => {
-            const nextLives = prevLives - reachedBottomCount;
-            if (nextLives <= 0) {
-              setGameState('gameover');
-            }
-            return Math.max(0, nextLives);
-          });
-          setCombo(0);
-          playMissSound();
-          return remaining;
+            setLives((prevLives) => {
+              const nextLives = prevLives - hitItems.length;
+              if (nextLives <= 0) {
+                setGameState('gameover');
+              }
+              return Math.max(0, nextLives);
+            });
+            setCombo(0);
+            playMissSound();
+          }, 0);
         }
 
-        return updated;
+        // Check if level cleared (win condition) - also pushed out of render phase safely
+        if (remaining.length === 0 && spawnQueueRef.current.length === 0) {
+          setTimeout(() => {
+            setLives((currentLives) => {
+              if (currentLives > 0) setGameState('victory');
+              return currentLives;
+            });
+          }, 0);
+        }
+
+        return remaining;
       });
 
       // 2. Update particle positions
-      setParticles((prev) => 
-        prev.map((p) => ({
+      setParticles((prev) => {
+        if (prev.length === 0) return prev; // Optimize
+        return prev.map((p) => ({
           ...p,
           x: p.x + p.vx,
           y: p.y + p.vy,
           vy: p.vy + 0.15, // gravity
           alpha: p.alpha - 0.02
-        })).filter((p) => p.alpha > 0)
-      );
+        })).filter((p) => p.alpha > 0);
+      });
 
       animationFrameRef.current = requestAnimationFrame(updateGame);
     };
@@ -482,9 +486,9 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       setFallingHanja((prev) => {
         const remaining = prev.filter((item) => item.uid !== target.uid);
         
-        // Check if level cleared
+        // Check if level cleared safely outside render phase
         if (spawnQueueRef.current.length === 0 && remaining.length === 0) {
-          setGameState('victory');
+          setTimeout(() => setGameState('victory'), 0);
         }
         return remaining;
       });
