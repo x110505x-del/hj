@@ -23,6 +23,8 @@ export default function Leaderboard({ profile }) {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '8px',
           marginBottom: '12px',
           borderBottom: '2px solid var(--color-border)',
           paddingBottom: '8px'
@@ -36,22 +38,29 @@ export default function Leaderboard({ profile }) {
             margin: 0
           }}>
             <Trophy size={18} fill="var(--color-gold)" style={{ color: 'var(--color-gold)' }} />
-            수련생 실시간 골드 랭킹 (더미 제외)
+            조선 팔도 한자 수련 랭킹
           </h3>
           <button 
             onClick={refreshData}
             style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--color-text-muted)',
+              background: 'rgba(16, 185, 129, 0.06)',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              borderRadius: '20px',
+              padding: '4px 8px',
+              color: 'var(--color-primary)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              fontSize: '0.75rem'
+              fontSize: '0.72rem',
+              fontWeight: 'bold',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.06)'}
           >
-            <RefreshCw size={12} /> 새로고침
+            <RefreshCw size={11} /> 새로고침
           </button>
         </div>
 
