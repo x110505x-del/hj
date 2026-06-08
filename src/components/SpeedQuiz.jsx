@@ -148,7 +148,9 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound, onCom
       );
 
       if (onCompleteGame) {
-        onCompleteGame(g, x, true);
+        // 기준양: 최소 5문제 이상 정답이어야 출석(수련완료) 인정
+        const isSuccess = correctCount >= 5;
+        onCompleteGame(g, x, isSuccess);
       }
     }
   }, [gameState]);

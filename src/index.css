@@ -429,6 +429,14 @@ body {
     gap: 16px !important;
   }
 
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .admin-body-split {
+    grid-template-columns: 1fr !important;
+  }
+
   /* Level selector grid wrapper */
   .level-grid {
     grid-template-columns: repeat(4, 1fr) !important;
@@ -456,6 +464,10 @@ body {
 
 /* Extra Small Phones (iPhones, Android screens) */
 @media (max-width: 480px) {
+  .admin-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
   .level-grid {
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 6px !important;

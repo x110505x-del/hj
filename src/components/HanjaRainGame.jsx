@@ -188,7 +188,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
         const remaining = updated.filter((item) => !item.hitFloor);
 
         // Check if level cleared (win condition)
-        if (spawnQueueRef.current.length === 0 && remaining.length === 0) {
+        if (hasStarted && spawnQueueRef.current.length === 0 && remaining.length === 0) {
           setLives((currentLives) => {
             if (currentLives > 0) {
               setGameState('victory');
@@ -269,7 +269,9 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       );
 
       if (onCompleteGame) {
-        onCompleteGame(g, x, gameState === 'victory');
+        // 기준양: 최소 5개 이상 격파하거나 승리해야만 출석(수련완료) 인정
+        const isSuccess = gameState === 'victory' || clearedCount >= 5;
+        onCompleteGame(g, x, isSuccess);
       }
     }
   }, [gameState]);

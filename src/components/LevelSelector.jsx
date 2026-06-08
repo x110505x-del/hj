@@ -588,7 +588,25 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           <span>📊</span> 나의 학습 분석 및 오답노트
         </h2>
 
-        {/* 탭 헤더 */}
+        {!profile || !profile.isLoggedIn ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '40px 20px',
+            color: 'var(--color-text-muted)',
+            fontSize: '0.9rem',
+            backgroundColor: '#f8fafc',
+            borderRadius: '12px',
+            border: '1px dashed var(--color-border)'
+          }}>
+            <p style={{ margin: '0 0 12px 0', fontSize: '2rem' }}>🔒</p>
+            <strong style={{ display: 'block', fontSize: '1.1rem', color: '#1f2937', marginBottom: '8px' }}>
+              로그인하세요!
+            </strong>
+            로그인하면 나만의 학습 분석, 수련 기록 로그, 그리고 오답노트를 사용할 수 있습니다.
+          </div>
+        ) : (
+          <>
+            {/* 탭 헤더 */}
         <div style={{
           display: 'flex',
           borderBottom: '2px solid var(--color-border)',
@@ -844,6 +862,8 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
               </div>
             )}
           </div>
+        )}
+          </>
         )}
       </div>
 
