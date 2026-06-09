@@ -245,7 +245,8 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                   alignItems: 'center',
                   gap: '2px',
                   transition: 'all 0.2s',
-                  marginLeft: '2px'
+                  marginLeft: '2px',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = 'var(--color-primary)';
@@ -1000,9 +1001,9 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
               </button>
 
               {/* Title Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <Award size={24} color="var(--color-primary)" />
-                <h2 className="font-display" style={{ fontSize: '1.25rem', color: 'var(--color-primary)', margin: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'nowrap' }}>
+                <Award size={24} color="var(--color-primary)" style={{ flexShrink: 0 }} />
+                <h2 className="font-display" style={{ fontSize: '1.25rem', color: 'var(--color-primary)', margin: 0, whiteSpace: 'nowrap' }}>
                   수련생 등급 가이드
                 </h2>
               </div>
@@ -1015,8 +1016,8 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 padding: '14px 16px',
                 marginBottom: '20px'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '10px' }}>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
                     <strong>{profile?.username || '수련생'}</strong> 님의 수련 성과
                   </span>
                   <span style={{
@@ -1025,7 +1026,9 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                     backgroundColor: 'var(--color-primary)',
                     color: 'white',
                     padding: '2px 8px',
-                    borderRadius: '10px'
+                    borderRadius: '10px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
                   }}>
                     {currentRank.badge} {currentRank.name}
                   </span>
