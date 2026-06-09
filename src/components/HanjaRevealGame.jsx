@@ -83,7 +83,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
     
     const target = queue[index];
     const pool = fullDb.filter(h => h.char !== target.char);
-    const distractors = shuffleArray(pool).slice(0, 4);
+    const distractors = shuffleArray(pool).slice(0, 5);
     
     const options = shuffleArray([target, ...distractors]);
     setCurrentOptions(options);
@@ -109,7 +109,17 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
       showFeedbackAndNext('correct', points);
     } else {
       playSound('wrong');
-      showFeedbackAndNext('wrong', 0);
+      if (revealLevel < 4) {
+        // 틀렸을 때 바로 넘어가지 않고 다음 단계 힌트를 보여줌
+        setFeedback({ type: 'wrong_advance' });
+        setTimeout(() => {
+          setFeedback(null);
+          setRevealLevel(lvl => lvl + 1);
+        }, 700); // 0.7초간 ❌ 표시 후 시야 확장
+      } else {
+        // 4단계(완전 노출)에서도 틀리면 최종 오답 처리하고 다음 문제로 넘어감
+        showFeedbackAndNext('wrong', 0);
+      }
     }
   };
 
@@ -335,9 +345,9 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
           )}
         </div>
 
-        {/* Options Grid - Compact Size to prevent scrolling */}
+        {/* Options Grid - 6 items in 2 rows of 3 */}
         <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%'
+          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', width: '100%'
         }}>
           {currentOptions.map((opt, idx) => (
             <button
@@ -345,15 +355,16 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               disabled={!!feedback}
               onClick={() => handleAnswer(opt)}
               style={{
-                gridColumn: idx === 4 ? '1 / -1' : 'auto', // make 5th option span full width
-                padding: '10px 12px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
-                fontSize: '0.95rem', fontWeight: 'bold', color: '#1f2937', cursor: feedback ? 'default' : 'pointer',
-                transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'center'
+                padding: '12px 6px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
+                fontSize: '0.85rem', fontWeight: 'bold', color: '#1f2937', cursor: feedback ? 'default' : 'pointer',
+                transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
               }}
               onMouseEnter={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.03)'; } }}
               onMouseLeave={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.backgroundColor = '#ffffff'; } }}
             >
-              {opt.meaning} <span style={{ color: 'var(--color-accent)' }}>{opt.sound}</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>{opt.meaning}</span>
+              <span style={{ color: 'var(--color-accent)', fontSize: '1.05rem' }}>{opt.sound}</span>
             </button>
           ))}
         </div>
