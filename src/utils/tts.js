@@ -17,7 +17,7 @@ if (typeof window !== 'undefined') {
 
 // Generate Google and Youdao TTS URLs
 const getFallbackAudioUrls = (text) => {
-  const primary = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=ko&client=tw-ob`;
+  const primary = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=ko&client=tw-ob`;
   const secondary = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&le=ko`;
   return { primary, secondary };
 };
@@ -410,17 +410,12 @@ export const speakKorean = (text, options = {}) => {
   };
 
   const runSpeak = () => {
-    // If online, prioritize premium cloud-based neural voice (Google/Youdao)
-    if (useCloudTts && typeof navigator !== 'undefined' && navigator.onLine) {
-      console.log("TTS: Using premium Cloud TTS for natural voice.");
-      playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, (err) => {
-        console.warn("TTS: Cloud TTS failed. Falling back to local SpeechSynthesis:", err);
-        runLocalSpeechSynthesis();
-      });
-    } else {
-      console.log("TTS: Offline or cloud disabled. Using local SpeechSynthesis engine.");
+    // 무조건 구글 번역 TTS URL (https://translate.google.com/translate_tts?...) 주소를 활용한 오디오 객체 재생을 최우선 시도
+    console.log("TTS: Using Google Translate Cloud TTS for natural voice.");
+    playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, (err) => {
+      console.warn("TTS: Google Translate TTS failed. Falling back to local SpeechSynthesis:", err);
       runLocalSpeechSynthesis();
-    }
+    });
   };
 
   if (skipCancel) {
