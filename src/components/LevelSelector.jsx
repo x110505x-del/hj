@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, BookOpen, Clock, CloudRain, PenTool, Award, X, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Clock, CloudRain, PenTool, Eye, Award, X, Sparkles } from 'lucide-react';
 import { HANJA_LEVELS } from '../services/hanjaDb';
 import { getRankByXp, removeWrongHanja, RANKS } from '../services/mockDb';
 import { speakKorean, unlockTtsAudio } from '../utils/tts';
@@ -319,6 +319,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           <ul style={{ margin: 0, paddingLeft: '16px', lineHeight: '1.4' }}>
             <li>스피드 퀴즈 1판 완료</li>
             <li>한자비 맞추기 게임 1판 완료</li>
+            <li>가려진 한자 맞추기 1판 완료</li>
             <li className="mobile-task-text">플래시 카드 50자 학습 (오늘 학습량: <strong>{profile ? profile.flashcardsToday || 0 : 0}</strong> / 50자)</li>
           </ul>
           <div style={{ 
@@ -333,7 +334,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
             gap: '4px'
           }}>
             <span>💡</span>
-            <span><strong>골드 획득 안내:</strong> 골드는 오직 <strong>스피드 퀴즈</strong>와 <strong>한자비 맞추기 게임</strong> 수련을 통해서만 획득 가능합니다. (출석체크 및 쓰기 연습으로는 골드가 지급되지 않습니다)</span>
+            <span><strong>골드 획득 안내:</strong> 골드는 오직 <strong>스피드 퀴즈</strong>, <strong>한자비 맞추기</strong>, <strong>가려진 한자 맞추기</strong> 수련을 통해서만 획득 가능합니다. (출석 및 쓰기 연습은 골드 미지급)</span>
           </div>
         </div>
       </div>
@@ -595,6 +596,57 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
             </h3>
             <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
               테두리만 있는 한자에 보이지 않는 붓이 지나가며 획순 순서대로 써지는 모습을 관찰합니다.
+            </span>
+          </div>
+        </div>
+
+        {/* Mode 5: Reveal Game */}
+        <div 
+          onClick={() => handleModeStart('reveal_game')}
+          className="study-mode-card"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '20px',
+            backgroundColor: '#ffffff',
+            border: '2px solid var(--color-border)',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            cursor: 'pointer',
+            textAlign: 'left',
+            transition: 'all 0.2s',
+            boxShadow: 'var(--shadow-sm)',
+            height: '110px',
+            boxSizing: 'border-box'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-primary)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-border)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <div style={{
+            width: '50px',
+            height: '50px',
+            borderRadius: '12px',
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            color: 'var(--color-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <Eye size={26} />
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: '#1f2937', fontWeight: 'bold' }}>
+              가려진 한자 맞추기
+            </h3>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+              가려진 한자가 조금씩 위로 드러납니다. 최대한 일찍 정답을 맞춰 높은 점수를 획득하세요!
             </span>
           </div>
         </div>

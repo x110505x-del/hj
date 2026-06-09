@@ -4,6 +4,7 @@ import Flashcards from './components/Flashcards';
 import SpeedQuiz from './components/SpeedQuiz';
 import HanjaRainGame from './components/HanjaRainGame';
 import HanjaWritingPractice from './components/HanjaWritingPractice';
+import HanjaRevealGame from './components/HanjaRevealGame';
 import FeedbackWidget from './components/FeedbackWidget';
 import LoginModal from './components/LoginModal';
 import AdminPanel from './components/AdminPanel';
@@ -12,7 +13,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 
 export default function App() {
   const [selectedLevel, setSelectedLevel] = useState('8급');
-  const [currentScreen, setCurrentScreen] = useState('selector'); // 'selector' | 'flashcard' | 'speed_quiz' | 'rain_game' | 'writing_practice'
+  const [currentScreen, setCurrentScreen] = useState('selector'); // 'selector' | 'flashcard' | 'speed_quiz' | 'rain_game' | 'writing_practice' | 'reveal_game'
   const [soundOn, setSoundOn] = useState(true);
   const [profile, setProfile] = useState(() => getProfile());
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -74,7 +75,7 @@ export default function App() {
       window.speechSynthesis.cancel();
       const speechText = isSuccess 
         ? `수련 완료. ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`
-        : `수련 도전 실패. 하지만 ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`;
+        : `도전 실패. 하지만 ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`;
       const utterance = new SpeechSynthesisUtterance(speechText);
       utterance.lang = 'ko-KR';
       window.speechSynthesis.speak(utterance);
@@ -86,7 +87,7 @@ export default function App() {
       if (isSuccess) {
         alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)`);
       } else {
-        alert(`😢 수련 실패!\n한자비가 바닥에 닿아 미션에 실패했습니다. (출석 불인정)\n(수련 기본 보상 획득: +${goldEarned} Gold, +${xpEarned} XP)`);
+        alert(`😢 수련 실패!\n미션에 실패했습니다. (출석 불인정)\n(기본 보상 획득: +${goldEarned} Gold, +${xpEarned} XP)`);
       }
     }
   };
@@ -402,6 +403,16 @@ export default function App() {
             onBack={() => setCurrentScreen('selector')}
             soundOn={soundOn}
             onToggleSound={handleToggleSound}
+          />
+        )}
+
+        {currentScreen === 'reveal_game' && (
+          <HanjaRevealGame
+            level={selectedLevel}
+            onBack={() => setCurrentScreen('selector')}
+            soundOn={soundOn}
+            onToggleSound={handleToggleSound}
+            onCompleteGame={handleCompleteGame}
           />
         )}
 
