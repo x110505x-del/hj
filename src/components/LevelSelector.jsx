@@ -961,8 +961,10 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
               className="glass-card"
               style={{
                 width: '100%',
-                maxWidth: '600px',
-                padding: '24px',
+                maxWidth: '500px',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                padding: '20px',
                 position: 'relative',
                 animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                 border: '2px solid var(--color-primary)',
@@ -1152,14 +1154,41 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 </table>
               </div>
 
-              {/* Bottom guide notice */}
+              {/* Bottom guide notice & Close Button */}
               <div style={{
                 textAlign: 'center',
                 marginTop: '16px',
-                fontSize: '0.68rem',
-                color: 'var(--color-text-muted)'
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '12px'
               }}>
-                수련에 정진하여 더 높은 관직과 명예에 도전하십시오!
+                <div style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>
+                  수련에 정진하여 더 높은 관직과 명예에 도전하십시오!
+                </div>
+                <button
+                  onClick={() => setShowRankGuide(false)}
+                  style={{
+                    backgroundColor: 'var(--color-primary)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 24px',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 6px rgba(16, 185, 129, 0.15)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--color-primary-dark)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--color-primary)';
+                  }}
+                >
+                  닫기
+                </button>
               </div>
 
             </div>
