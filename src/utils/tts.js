@@ -117,20 +117,22 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
   currentPlayingAudio = activeAudio;
 
   try {
-    // Configure pitch shifting or speed changes based on voiceType
-    if (voiceType === 'child') {
-      activeAudio.preservesPitch = false;
-      activeAudio.webkitPreservesPitch = false;
-      activeAudio.playbackRate = 1.35;
-    } else if (voiceType === 'male') {
-      activeAudio.preservesPitch = false;
-      activeAudio.webkitPreservesPitch = false;
-      activeAudio.playbackRate = 0.82;
-    } else {
-      activeAudio.preservesPitch = true;
-      activeAudio.webkitPreservesPitch = true;
-      activeAudio.playbackRate = rate;
-    }
+    // Configure pitch shifting or speed changes based on voiceType safely
+    try {
+      if (voiceType === 'child') {
+        if ('preservesPitch' in activeAudio) activeAudio.preservesPitch = false;
+        if ('webkitPreservesPitch' in activeAudio) activeAudio.webkitPreservesPitch = false;
+        activeAudio.playbackRate = 1.35;
+      } else if (voiceType === 'male') {
+        if ('preservesPitch' in activeAudio) activeAudio.preservesPitch = false;
+        if ('webkitPreservesPitch' in activeAudio) activeAudio.webkitPreservesPitch = false;
+        activeAudio.playbackRate = 0.82;
+      } else {
+        if ('preservesPitch' in activeAudio) activeAudio.preservesPitch = true;
+        if ('webkitPreservesPitch' in activeAudio) activeAudio.webkitPreservesPitch = true;
+        activeAudio.playbackRate = rate;
+      }
+    } catch(e) { console.warn('Safari Pitch attribute error:', e); }
 
     // Attach callbacks
     activeAudio.onended = () => {
@@ -151,19 +153,21 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
         const secAudio = cached.secondary;
         currentPlayingAudio = secAudio;
         
-        if (voiceType === 'child') {
-          secAudio.preservesPitch = false;
-          secAudio.webkitPreservesPitch = false;
-          secAudio.playbackRate = 1.35;
-        } else if (voiceType === 'male') {
-          secAudio.preservesPitch = false;
-          secAudio.webkitPreservesPitch = false;
-          secAudio.playbackRate = 0.82;
-        } else {
-          secAudio.preservesPitch = true;
-          secAudio.webkitPreservesPitch = true;
-          secAudio.playbackRate = rate;
-        }
+        try {
+          if (voiceType === 'child') {
+            if ('preservesPitch' in secAudio) secAudio.preservesPitch = false;
+            if ('webkitPreservesPitch' in secAudio) secAudio.webkitPreservesPitch = false;
+            secAudio.playbackRate = 1.35;
+          } else if (voiceType === 'male') {
+            if ('preservesPitch' in secAudio) secAudio.preservesPitch = false;
+            if ('webkitPreservesPitch' in secAudio) secAudio.webkitPreservesPitch = false;
+            secAudio.playbackRate = 0.82;
+          } else {
+            if ('preservesPitch' in secAudio) secAudio.preservesPitch = true;
+            if ('webkitPreservesPitch' in secAudio) secAudio.webkitPreservesPitch = true;
+            secAudio.playbackRate = rate;
+          }
+        } catch(e) {}
 
         secAudio.onended = () => {
           console.log(`TTS Fallback: Secondary Audio ended for "${cleanText}"`);
@@ -406,19 +410,15 @@ export const speakKorean = (text, options = {}) => {
   };
 
   const runSpeak = () => {
-    // Detect desktop browser to avoid strict Audio autoplay bans on dynamically loaded cloud audio
-    const isDesktop = typeof navigator !== 'undefined' && !(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    const effectiveUseCloudTts = useCloudTts && !isDesktop;
-
-    // If online and on mobile, prioritize premium cloud-based neural voice (Google/Youdao)
-    if (effectiveUseCloudTts && typeof navigator !== 'undefined' && navigator.onLine) {
+    // If online, prioritize premium cloud-based neural voice (Google/Youdao)
+    if (useCloudTts && typeof navigator !== 'undefined' && navigator.onLine) {
       console.log("TTS: Using premium Cloud TTS for natural voice.");
       playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, (err) => {
         console.warn("TTS: Cloud TTS failed. Falling back to local SpeechSynthesis:", err);
         runLocalSpeechSynthesis();
       });
     } else {
-      console.log("TTS: Desktop environment or cloud disabled. Using local SpeechSynthesis engine.");
+      console.log("TTS: Offline or cloud disabled. Using local SpeechSynthesis engine.");
       runLocalSpeechSynthesis();
     }
   };
