@@ -127,7 +127,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound, onSt
       speakKorean(text, {
         gender: 'female',
         rate: 0.95,
-        repeatTwice: false, // Review mode reads only once!
+        repeatTwice: true, // Review mode reads twice!
         onEnd: () => {
           if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
             // Wait 1.8 seconds before advancing to prevent audio tail cutoff

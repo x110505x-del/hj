@@ -19,8 +19,9 @@ if (typeof window !== 'undefined') {
 
 // Generate Google and Youdao TTS URLs
 const getFallbackAudioUrls = (text) => {
-  const primary = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=ko&client=tw-ob`;
-  const secondary = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&le=ko`;
+  const ts = Date.now(); // Cache buster
+  const primary = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=ko&client=tw-ob&ts=${ts}`;
+  const secondary = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&le=ko&ts=${ts}`;
   return { primary, secondary };
 };
 
@@ -142,6 +143,9 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError, repeatTwice = 
     // Attach callbacks
     activeAudio.onended = () => {
       if (currentPlaySessionId !== sessionId) return;
+      if (activeAudio._isEnding) return; // Safari debounce guard
+      activeAudio._isEnding = true;
+      setTimeout(() => { activeAudio._isEnding = false; }, 300);
       playCount++;
       if (playCount < maxPlays) {
         console.log(`TTS Fallback: Replaying primary Audio for "${cleanText}" (${playCount}/${maxPlays})`);
@@ -184,6 +188,9 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError, repeatTwice = 
 
         secAudio.onended = () => {
           if (currentPlaySessionId !== sessionId) return;
+          if (secAudio._isEnding) return;
+          secAudio._isEnding = true;
+          setTimeout(() => { secAudio._isEnding = false; }, 300);
           playCount++;
           if (playCount < maxPlays) {
             console.log(`TTS Fallback: Replaying secondary Audio for "${cleanText}" (${playCount}/${maxPlays})`);
@@ -257,8 +264,8 @@ export const speakKorean = (text, options = {}) => {
     useCloudTts = true // Prefer high-quality cloud neural voice for premium, natural pronunciation
   } = options;
 
-  // 0. 괄호와 괄호 속 한자/텍스트 완벽히 제거
-  const processedText = text.replace(/\([^)]*\)/g, '').trim();
+  // 0. 괄호와 괄호 속 한자/텍스트 완벽히 제거 (전각/반각/대괄호 등 모든 괄호 지원)
+  const processedText = text.replace(/[\[(<（【][^\])>）】]*[\])>）】]/g, '').trim();
 
   // 1. 슬래시(/)가 들어있는 특수 한자 처리 (예: "한국/나라, 한")
   let finalSpeechText = processedText;
