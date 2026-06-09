@@ -216,3 +216,5 @@
    * **수호 규칙:** `mockDb.js`와 `App.jsx` 내의 모든 날짜 기반 Streak(연속 학습일) 계산 로직에서 일반 `new Date().toISOString()` 사용을 전면 금지하며, 반드시 **`getKstDateString()`를 호출하여 KST(UTC+9)로 보정된 ISO 시간 포맷만 사용**해야 날짜 변경 오차를 막을 수 있습니다.
 13. **[공유] 실시간 공지 송출 캐시 무력화 (Global Notice Cache Busting Lock):**
    * **수호 규칙:** `dbSync.js`의 `fetchGlobalNotice` 함수 내 GET 요청은 항상 브라우저 캐시에 감염되지 않도록 `?t=${Date.now()}` 파라미터와 `{ cache: 'no-store' }` 헤더를 반드시 동반해야만, 여러 장비 간의 실시간 업데이트 격차를 막고 팝업을 즉시 반영할 수 있습니다.
+14. **[출석 로직] 클라우드 동기화 시 Streak 데이터 보존 락 (Cloud Sync Streak Lock):**
+   * **수호 규칙:** `dbSync.js`의 `saveProfileToCloud`와 `loadProfileFromCloud` 페이로드에 반드시 `streakLastActive`, `lastActiveDate`, `flashcardsToday` 항목을 포함해야 합니다. 이를 누락할 경우 로그인/재로그인 시 유저의 연속 학습일 기준점(KST)이 삭제되어 무조건 스트릭이 1일로 리셋되는 치명적 버그가 재발합니다.
