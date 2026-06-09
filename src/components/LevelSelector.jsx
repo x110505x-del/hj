@@ -233,12 +233,6 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
               <strong 
                 onClick={() => {
                   setShowRankGuide(true);
-                  if (profile.soundOn && 'speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                    const utterance = new SpeechSynthesisUtterance("수련생 등급 가이드 안내창을 엽니다.");
-                    utterance.lang = 'ko-KR';
-                    window.speechSynthesis.speak(utterance);
-                  }
                 }} 
                 style={{ 
                   color: 'var(--color-primary)', 
@@ -263,7 +257,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 }}
                 title="등급업 기준 보기"
               >
-                {getRankByXp(profile.xp).name} 🔍
+                {getRankByXp(profile.xp, profile.streak).name} 🔍
               </strong>
             </p>
             <button
@@ -921,17 +915,26 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
       {/* 🔮 등급 안내 가이드 모달 (Rank Guide Modal) */}
       {showRankGuide && (() => {
         const xp = profile?.xp ?? 0;
-        const currentRank = getRankByXp(xp);
+        const streak = profile?.streak ?? 0;
+        const currentRank = getRankByXp(xp, streak);
         const currentRankIndex = RANKS.findIndex(r => r.name === currentRank.name);
         const nextRank = currentRankIndex < RANKS.length - 1 ? RANKS[currentRankIndex + 1] : null;
 
-        let progressPercent = 100;
+        let xpProgressPercent = 100;
+        let streakProgressPercent = 100;
         let nextRankXpRemaining = 0;
+        let nextRankStreakRemaining = 0;
+
         if (nextRank) {
-          const range = nextRank.minXp - currentRank.minXp;
-          const currentProgress = xp - currentRank.minXp;
-          progressPercent = Math.min(Math.max((currentProgress / range) * 100, 0), 100);
-          nextRankXpRemaining = nextRank.minXp - xp;
+          const xpRange = nextRank.minXp - currentRank.minXp;
+          const xpCurrentProgress = xp - currentRank.minXp;
+          xpProgressPercent = Math.min(Math.max((xpCurrentProgress / xpRange) * 100, 0), 100);
+          nextRankXpRemaining = Math.max(nextRank.minXp - xp, 0);
+
+          const streakRange = Math.max(nextRank.minStreak - currentRank.minStreak, 1);
+          const streakCurrentProgress = streak - currentRank.minStreak;
+          streakProgressPercent = Math.min(Math.max((streakCurrentProgress / streakRange) * 100, 0), 100);
+          nextRankStreakRemaining = Math.max(nextRank.minStreak - streak, 0);
         }
 
         return (
@@ -958,7 +961,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
               className="glass-card"
               style={{
                 width: '100%',
-                maxWidth: '520px',
+                maxWidth: '600px',
                 padding: '24px',
                 position: 'relative',
                 animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1023,32 +1026,66 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                   </span>
                 </div>
 
-                <div style={{ fontSize: '0.8rem', marginBottom: '10px' }}>
-                  현재 누적 경험치: <strong style={{ color: 'var(--color-secondary)' }}>{xp} XP</strong>
+                <div style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', marginBottom: '12px', borderBottom: '1px dashed rgba(16, 185, 129, 0.15)', paddingBottom: '8px' }}>
+                  <div>누적 경험치: <strong style={{ color: 'var(--color-secondary)' }}>{xp} XP</strong></div>
+                  <div>연속 학습일수: <strong style={{ color: 'var(--color-primary)' }}>{streak}일</strong></div>
                 </div>
 
                 {/* Progress bar logic */}
                 {nextRank ? (
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                      <span>다음 등급: <strong>{nextRank.name}</strong></span>
-                      <span>남은 경험치: <strong>{nextRankXpRemaining} XP</strong></span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 'bold' }}>
+                      다음 등급 <strong>{nextRank.name}</strong> 승급 요건:
                     </div>
-                    {/* Gauge Bar */}
-                    <div style={{
-                      height: '8px',
-                      backgroundColor: '#e2e8f0',
-                      borderRadius: '4px',
-                      overflow: 'hidden',
-                      position: 'relative'
-                    }}>
+                    
+                    {/* XP Progress */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '3px' }}>
+                        <span>경험치 요건: {xp} / {nextRank.minXp} XP</span>
+                        <span>{nextRankXpRemaining > 0 ? `부족: ${nextRankXpRemaining} XP` : '충족 완료!'}</span>
+                      </div>
                       <div style={{
-                        width: `${progressPercent}%`,
-                        height: '100%',
-                        background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
-                        borderRadius: '4px',
-                        transition: 'width 0.4s ease-out'
-                      }} />
+                        height: '6px',
+                        backgroundColor: '#e2e8f0',
+                        borderRadius: '3px',
+                        overflow: 'hidden',
+                        position: 'relative'
+                      }}>
+                        <div style={{
+                          width: `${xpProgressPercent}%`,
+                          height: '100%',
+                          background: 'linear-gradient(90deg, #f59e0b, #d97706)',
+                          borderRadius: '3px',
+                          transition: 'width 0.4s ease-out'
+                        }} />
+                      </div>
+                    </div>
+
+                    {/* Streak Progress */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '3px' }}>
+                        <span>연속 학습일수 요건: {streak} / {nextRank.minStreak}일</span>
+                        <span>{nextRankStreakRemaining > 0 ? `부족: ${nextRankStreakRemaining}일` : '충족 완료!'}</span>
+                      </div>
+                      <div style={{
+                        height: '6px',
+                        backgroundColor: '#e2e8f0',
+                        borderRadius: '3px',
+                        overflow: 'hidden',
+                        position: 'relative'
+                      }}>
+                        <div style={{
+                          width: `${streakProgressPercent}%`,
+                          height: '100%',
+                          background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
+                          borderRadius: '3px',
+                          transition: 'width 0.4s ease-out'
+                        }} />
+                      </div>
+                    </div>
+                    
+                    <div style={{ fontSize: '0.65rem', color: '#b45309', fontStyle: 'italic', marginTop: '2px' }}>
+                      ※ 승급을 위해서는 누적 경험치와 최소 연속 학습일수 요건을 모두 충족하셔야 합니다.
                     </div>
                   </div>
                 ) : (
@@ -1066,6 +1103,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                     <tr style={{ borderBottom: '2px solid var(--color-border)', color: 'var(--color-text-muted)', fontWeight: 'bold' }}>
                       <th style={{ padding: '8px 4px' }}>등급명</th>
                       <th style={{ padding: '8px 4px', textAlign: 'right' }}>최소 XP</th>
+                      <th style={{ padding: '8px 4px', textAlign: 'right' }}>연속 학습</th>
                       <th style={{ padding: '8px 12px' }}>등급 묘사 및 혜택</th>
                     </tr>
                   </thead>
@@ -1100,6 +1138,9 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                           </td>
                           <td style={{ padding: '10px 4px', textAlign: 'right', color: 'var(--color-secondary)' }}>
                             {r.minXp} XP
+                          </td>
+                          <td style={{ padding: '10px 4px', textAlign: 'right', color: 'var(--color-primary)' }}>
+                            {r.minStreak}일 이상
                           </td>
                           <td style={{ padding: '10px 12px', fontSize: '0.72rem', color: isCurrent ? 'var(--color-primary-dark)' : 'var(--color-text-muted)' }}>
                             {r.description}

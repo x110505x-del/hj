@@ -25,13 +25,7 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const triggerTtsFeedback = (text) => {
-    if (profile.soundOn && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ko-KR';
-      utterance.rate = 1.1;
-      window.speechSynthesis.speak(utterance);
-    }
+    // Disabled login/signup voice guidance by user request
   };
 
   const handleLoginSubmit = (e) => {

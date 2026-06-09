@@ -8,6 +8,8 @@
  * ensuring no email addresses are ever stored on the public cloud storage.
  */
 
+import { getRankByXp } from './rankDb';
+
 // Simple hashing function to obfuscate the email address for privacy
 function obfuscateEmail(email) {
   if (!email) return 'anon';
@@ -155,12 +157,9 @@ export async function fetchGlobalLeaderboard() {
               if (res.ok) {
                 const profile = await res.json();
                 if (profile && profile.username) {
-                  let rName = '유생 (儒生)';
                   const xp = profile.xp ?? 0;
-                  if (xp >= 1500) rName = '진사 (進士)';
-                  if (xp >= 3500) rName = '장원급제 (壯元及第)';
-                  if (xp >= 6000) rName = '한림학사 (翰林學士)';
-                  if (xp >= 10000) rName = '대제학 (大提學)';
+                  const streak = profile.streak ?? 0;
+                  const rName = getRankByXp(xp, streak).name;
                   
                   return {
                     id: key,
@@ -229,12 +228,7 @@ export async function updateGlobalLeaderboard(profile) {
     const myId = obfuscateEmail(profile.email);
     const myIndex = currentBoard.findIndex(u => u.id === myId);
     
-    // Helper logic to get rank name natively
-    let rName = '유생 (儒生)';
-    if (profile.xp >= 1500) rName = '진사 (進士)';
-    if (profile.xp >= 3500) rName = '장원급제 (壯元及第)';
-    if (profile.xp >= 6000) rName = '한림학사 (翰林學士)';
-    if (profile.xp >= 10000) rName = '대제학 (大提學)';
+    const rName = getRankByXp(profile.xp ?? 0, profile.streak ?? 0).name;
     
     const myEntry = {
       id: myId,
@@ -289,19 +283,16 @@ export async function getCloudAdminUsersList() {
         if (res.ok) {
           const profile = await res.json();
           if (profile && profile.username) {
-            let rName = '유생 (儒生)';
             const xp = profile.xp ?? 0;
-            if (xp >= 1500) rName = '진사 (進士)';
-            if (xp >= 3500) rName = '장원급제 (壯元及第)';
-            if (xp >= 6000) rName = '한림학사 (翰林學士)';
-            if (xp >= 10000) rName = '대제학 (大提學)';
+            const streak = profile.streak ?? 0;
+            const rName = getRankByXp(xp, streak).name;
             
             return {
               username: profile.username,
               email: profile.email || 'guest@hanja.com',
               gold: profile.gold ?? 0,
               xp: xp,
-              streak: profile.streak || 1,
+              streak: streak || 1,
               goal: profile.goal || '8급',
               currentLevel: profile.currentLevel || '8급',
               rankName: rName,

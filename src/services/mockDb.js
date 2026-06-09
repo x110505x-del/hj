@@ -2,22 +2,10 @@
 import { saveProfileToCloud } from './dbSync';
 
 // Joseon Dynasty Ranks based on XP
-export const RANKS = [
-  { name: '유생 (儒生)', minXp: 0, description: '가입 초기 학습을 막 시작한 초보 학습자 단계' },
-  { name: '진사 (進士)', minXp: 500, description: '일정 기준 이상의 한자 학습을 이수하고 기본 XP를 획득한 단계' },
-  { name: '장원급제 (壯元及第)', minXp: 1500, description: '중급 난이도를 정복하고 랭킹 상위권에 도달한 단계' },
-  { name: '한림학사 (翰林學士)', minXp: 3000, description: '고급 급수 진입 및 실시간 랭킹 상위 백분율을 유지하는 고숙련 단계' },
-  { name: '대제학 (大提學)', minXp: 6000, description: '최고 등급의 한자(1급/특급)를 완벽히 정복한 최고 명예 등급' }
-];
+import { RANKS as RANKDB_RANKS, getRankByXp as RANKDB_getRankByXp } from './rankDb';
 
-export function getRankByXp(xp) {
-  for (let i = RANKS.length - 1; i >= 0; i--) {
-    if (xp >= RANKS[i].minXp) {
-      return RANKS[i];
-    }
-  }
-  return RANKS[0];
-}
+export const RANKS = RANKDB_RANKS;
+export const getRankByXp = RANKDB_getRankByXp;
 
 // Hanja Data with normalized 100x100 coordinates for stroke checking
 export const HANJA_DATA = {
@@ -244,7 +232,7 @@ export const saveProfile = (profile) => {
       email: profile.email || 'guest@hanja.com',
       gold: profile.gold,
       xp: profile.xp,
-      rankName: getRankByXp(profile.xp).name,
+      rankName: getRankByXp(profile.xp, profile.streak).name,
       role: profile.role || 'user',
       streak: profile.streak || 1,
       goal: profile.goal || '8급',
@@ -333,7 +321,7 @@ export const getAdminUsersList = () => {
         streak: profile.streak || 1,
         goal: profile.goal || '8급',
         currentLevel: profile.currentLevel || '8급',
-        rankName: getRankByXp(profile.xp).name,
+        rankName: getRankByXp(profile.xp, profile.streak).name,
         role: profile.role || 'user',
         studyHistory: profile.studyHistory || []
       });
@@ -397,7 +385,7 @@ export const getLeaderboard = () => {
         email: profile.email || 'guest@hanja.com',
         gold: profile.gold,
         xp: profile.xp,
-        rankName: getRankByXp(profile.xp).name
+        rankName: getRankByXp(profile.xp, profile.streak).name
       });
     }
   }
@@ -422,7 +410,7 @@ export const getLeaderboard = () => {
         ...comp,
         xp: newXp,
         gold: newGold,
-        rankName: getRankByXp(newXp).name
+        rankName: getRankByXp(newXp, comp.streak || 5).name
       };
     });
     localStorage.setItem('competitors_data', JSON.stringify(competitors));

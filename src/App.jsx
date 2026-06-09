@@ -27,13 +27,6 @@ export default function App() {
     };
     setProfile(updated);
     saveProfile(updated);
-    
-    if (soundOn && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance("로그아웃 되었습니다.");
-      utterance.lang = 'ko-KR';
-      window.speechSynthesis.speak(utterance);
-    }
   };
 
   const handleCompleteGame = (goldEarned, xpEarned, isSuccess = true) => {
@@ -185,13 +178,6 @@ export default function App() {
       setProfile(updated);
       saveProfile(updated);
       setCurrentScreen('selector'); // reroute to dashboard
-
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance("장시간 미활동 또는 화면 이탈로 인해 자동 로그아웃 되었습니다.");
-        utterance.lang = 'ko-KR';
-        window.speechSynthesis.speak(utterance);
-      }
       alert("🔒 10분 동안 활동이 없거나 브라우저를 벗어나 자동 로그아웃 되었습니다. 개인정보 보호를 위해 세션을 종료합니다.");
     };
 

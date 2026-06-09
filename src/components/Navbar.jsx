@@ -20,13 +20,6 @@ export default function Navbar({ profile, onUpdateProfile, currentScreen, onNavi
       role: 'user' // Reset to default user role
     };
     onUpdateProfile(updated);
-    
-    if (profile.soundOn && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance("로그아웃 되었습니다.");
-      utterance.lang = 'ko-KR';
-      window.speechSynthesis.speak(utterance);
-    }
     onNavigate('dashboard');
   };
 
