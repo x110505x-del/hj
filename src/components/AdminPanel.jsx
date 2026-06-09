@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Users, MessageSquare, BarChart3, Reply, Award, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Shield, Users, MessageSquare, BarChart3, Reply, Award, CheckCircle2, ChevronRight, Megaphone } from 'lucide-react';
 import { getFeedbackList, addFeedbackReply } from '../services/mockDb';
-import { getCloudAdminUsersList } from '../services/dbSync';
+import { getCloudAdminUsersList, fetchGlobalNotice, updateGlobalNotice } from '../services/dbSync';
 
 export default function AdminPanel({ profile }) {
   const [users, setUsers] = useState([]);
@@ -10,6 +10,8 @@ export default function AdminPanel({ profile }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
+  const [globalNoticeText, setGlobalNoticeText] = useState('');
+  const [noticeMsg, setNoticeMsg] = useState('');
 
   const loadData = async () => {
     const userList = await getCloudAdminUsersList();
@@ -18,11 +20,41 @@ export default function AdminPanel({ profile }) {
     if (userList.length > 0) {
       setSelectedUser(userList[0]);
     }
+    
+    const notice = await fetchGlobalNotice();
+    if (notice && notice.isVisible) {
+      setGlobalNoticeText(notice.text);
+    }
   };
 
   useEffect(() => {
     loadData();
   }, [profile]);
+
+  const handleSaveNotice = async () => {
+    if (!globalNoticeText.trim()) {
+      setNoticeMsg('공지 내용을 입력해주세요.');
+      return;
+    }
+    const success = await updateGlobalNotice({ text: globalNoticeText.trim(), isVisible: true });
+    if (success) {
+      setNoticeMsg('전체 공지가 메인 화면에 적용되었습니다! 📢');
+      setTimeout(() => setNoticeMsg(''), 3000);
+    } else {
+      setNoticeMsg('적용 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleDeleteNotice = async () => {
+    const success = await updateGlobalNotice({ text: '', isVisible: false });
+    if (success) {
+      setGlobalNoticeText('');
+      setNoticeMsg('전체 공지가 삭제(숨김) 되었습니다! 🔇');
+      setTimeout(() => setNoticeMsg(''), 3000);
+    } else {
+      setNoticeMsg('삭제 중 오류가 발생했습니다.');
+    }
+  };
 
   const handlePostReply = async (e) => {
     e.preventDefault();
@@ -78,6 +110,37 @@ export default function AdminPanel({ profile }) {
             가입한 유저 정보 검토, 오답 지표 확인 및 건의사항(게시판) 비밀글 총괄 열람과 답변 조율을 진행합니다.
           </p>
         </div>
+      </div>
+
+      {/* 0. Global Notice Controller */}
+      <div className="glass-card" style={{ padding: '16px', marginBottom: '24px', borderLeft: '4px solid var(--color-accent)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <Megaphone size={20} style={{ color: 'var(--color-accent)' }} />
+          <h3 className="font-display" style={{ fontSize: '1.1rem', margin: 0 }}>
+            전체 수련생 긴급 공지 제어
+          </h3>
+        </div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 12px 0' }}>
+          작성 시 즉시 모든 수련생의 메인 화면에 팝업창으로 송출됩니다. (삭제 시 즉시 내려감)
+        </p>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            value={globalNoticeText}
+            onChange={(e) => setGlobalNoticeText(e.target.value)}
+            placeholder="공지할 내용을 입력하세요 (예: 현재 잔잔한 오류를 수정중 입니다!)"
+            style={{
+              flex: '1 1 250px', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', outline: 'none'
+            }}
+          />
+          <button onClick={handleSaveNotice} className="theme-btn theme-btn-primary" style={{ padding: '0 16px', whiteSpace: 'nowrap' }}>
+            팝업 송출
+          </button>
+          <button onClick={handleDeleteNotice} className="theme-btn" style={{ padding: '0 16px', backgroundColor: '#ef4444', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}>
+            삭제
+          </button>
+        </div>
+        {noticeMsg && <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--color-accent)', fontWeight: 'bold' }}>{noticeMsg}</div>}
       </div>
 
       {/* 1. Stat Box Columns */}

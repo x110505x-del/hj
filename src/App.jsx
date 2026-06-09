@@ -9,6 +9,7 @@ import FeedbackWidget from './components/FeedbackWidget';
 import LoginModal from './components/LoginModal';
 import AdminPanel from './components/AdminPanel';
 import { getProfile, saveProfile, getKstDateString } from './services/mockDb';
+import { fetchGlobalNotice } from './services/dbSync';
 import { Volume2, VolumeX } from 'lucide-react';
 
 export default function App() {
@@ -17,7 +18,17 @@ export default function App() {
   const [soundOn, setSoundOn] = useState(true);
   const [profile, setProfile] = useState(() => getProfile());
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [showNotice, setShowNotice] = useState(true);
+  const [showNotice, setShowNotice] = useState(false);
+  const [noticeText, setNoticeText] = useState('');
+
+  useEffect(() => {
+    fetchGlobalNotice().then(notice => {
+      if (notice && notice.isVisible && notice.text) {
+        setNoticeText(notice.text);
+        setShowNotice(true);
+      }
+    });
+  }, []);
 
   const handleLogout = () => {
     const updated = {
@@ -321,8 +332,8 @@ export default function App() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '1.4rem' }}>🚧</span>
-                  <span style={{ color: '#92400e', fontWeight: 'bold', fontSize: '0.95rem' }}>
-                    현재 잔잔한 오류를 수정중 입니다. 조금만 기다려 주세요!
+                  <span style={{ color: '#92400e', fontWeight: 'bold', fontSize: '0.95rem', whiteSpace: 'pre-wrap' }}>
+                    {noticeText}
                   </span>
                 </div>
                 <button 

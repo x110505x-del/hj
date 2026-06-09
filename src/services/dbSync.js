@@ -317,3 +317,40 @@ export async function getCloudAdminUsersList() {
     return [];
   }
 }
+
+/**
+ * Fetches the Global Notice from the cloud
+ */
+export async function fetchGlobalNotice() {
+  try {
+    const url = `${KV_BASE_URL}global_notice`;
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      return data; // Expected shape: { text: "...", isVisible: boolean }
+    }
+    return null;
+  } catch (e) {
+    console.error('Failed to fetch global notice', e);
+    return null;
+  }
+}
+
+/**
+ * Updates the Global Notice in the cloud (Admin Only)
+ */
+export async function updateGlobalNotice(noticeData) {
+  try {
+    const url = `${KV_BASE_URL}global_notice`;
+    // ⚠️ CRITICAL GUARDRAIL: Keep Content-Type as 'text/plain'
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(noticeData)
+    });
+    return response.ok;
+  } catch (e) {
+    console.error('Failed to update global notice', e);
+    return false;
+  }
+}
