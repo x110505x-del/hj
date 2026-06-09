@@ -156,6 +156,18 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
 
     let rAF;
     const updateGame = (timestamp) => {
+      // Prevent high refresh rate (144Hz+) desktop monitors from executing game logic too fast
+      if (!animationFrameRef.lastRender) animationFrameRef.lastRender = timestamp;
+      const renderDelta = timestamp - animationFrameRef.lastRender;
+      
+      if (renderDelta < 16) {
+        // Skip this frame if less than ~16ms (60 FPS cap) has passed to prevent speed-up and render locks
+        rAF = requestAnimationFrame(updateGame);
+        animationFrameRef.current = rAF;
+        return;
+      }
+      animationFrameRef.lastRender = timestamp;
+
       // Synchronized Spawn Logic:
       // By tying spawning strictly to the animation frame loop, we perfectly evade 
       // PC browser background throttling desync bugs. If rAF stops, spawning stops.

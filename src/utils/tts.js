@@ -406,15 +406,19 @@ export const speakKorean = (text, options = {}) => {
   };
 
   const runSpeak = () => {
-    // If online, prioritize premium cloud-based neural voice (Google/Youdao)
-    if (useCloudTts && typeof navigator !== 'undefined' && navigator.onLine) {
+    // Detect desktop browser to avoid strict Audio autoplay bans on dynamically loaded cloud audio
+    const isDesktop = typeof navigator !== 'undefined' && !(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    const effectiveUseCloudTts = useCloudTts && !isDesktop;
+
+    // If online and on mobile, prioritize premium cloud-based neural voice (Google/Youdao)
+    if (effectiveUseCloudTts && typeof navigator !== 'undefined' && navigator.onLine) {
       console.log("TTS: Using premium Cloud TTS for natural voice.");
       playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, (err) => {
         console.warn("TTS: Cloud TTS failed. Falling back to local SpeechSynthesis:", err);
         runLocalSpeechSynthesis();
       });
     } else {
-      console.log("TTS: Offline or cloud disabled. Using local SpeechSynthesis.");
+      console.log("TTS: Desktop environment or cloud disabled. Using local SpeechSynthesis engine.");
       runLocalSpeechSynthesis();
     }
   };
