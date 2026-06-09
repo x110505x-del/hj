@@ -232,11 +232,32 @@ export const speakKorean = (text, options = {}) => {
     useCloudTts = true // Prefer high-quality cloud neural voice for premium, natural pronunciation
   } = options;
 
-  // Format text: if repeatTwice is requested, read meaning and sound twice
+  // 1. 슬래시(/)가 들어있는 특수 한자 처리 (예: "한국/나라, 한")
   let finalSpeechText = text;
-  if (repeatTwice) {
-    // Clean text and join with a comma for a natural short pause
-    const cleaned = text.replace(/[.,]/g, '').trim();
+  let hasSlash = text.includes('/');
+  
+  if (hasSlash) {
+    const parts = text.split(',');
+    if (parts.length >= 2) {
+      const meaningPart = parts[0].trim(); // "한국/나라"
+      const soundPart = parts[1].trim();   // "한"
+      const meanings = meaningPart.split('/'); // ["한국", "나라"]
+      finalSpeechText = meanings.map(m => `${m.trim()} ${soundPart}`).join(', ');
+    } else {
+      const lastSpaceIndex = text.lastIndexOf(' ');
+      if (lastSpaceIndex !== -1) {
+        const meaningPart = text.substring(0, lastSpaceIndex).trim();
+        const soundPart = text.substring(lastSpaceIndex).trim();
+        const meanings = meaningPart.split('/');
+        finalSpeechText = meanings.map(m => `${m.trim()} ${soundPart}`).join(', ');
+      }
+    }
+  }
+
+  // 2. repeatTwice 처리
+  // 슬래시가 있는 경우 이미 각 뜻을 분리해서 읽었으므로(예: "한국 한, 나라 한"), repeatTwice를 무시하고 1회만 재생합니다.
+  if (repeatTwice && !hasSlash) {
+    const cleaned = finalSpeechText.replace(/[.,]/g, '').trim();
     finalSpeechText = `${cleaned}, ${cleaned}.`;
   }
 
