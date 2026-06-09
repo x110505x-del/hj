@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, BookOpen, Clock, CloudRain, PenTool } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Clock, CloudRain, PenTool, Award, X, Sparkles } from 'lucide-react';
 import { HANJA_LEVELS } from '../services/hanjaDb';
-import { getRankByXp, removeWrongHanja } from '../services/mockDb';
+import { getRankByXp, removeWrongHanja, RANKS } from '../services/mockDb';
 import { speakKorean, unlockTtsAudio } from '../utils/tts';
 import Leaderboard from './Leaderboard';
 
 export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMode, soundOn, onToggleSound, profile, onOpenLoginModal, onLogout, onUpdateProfile }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(profile?.username || '');
+  const [showRankGuide, setShowRankGuide] = useState(false);
   const [activeTab, setActiveTab] = useState('logs'); // 'logs' | 'wrong'
 
   useEffect(() => {
@@ -227,8 +228,43 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 <span>📧 이메일 프로필</span>
               </div>
             )}
-            <p className="mobile-status-text" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0' }}>
-              연속 학습: <strong>{profile.streak}일</strong> | 골드: <strong>{profile.gold}G</strong> | 현재 등급: <strong>{getRankByXp(profile.xp).name}</strong>
+            <p className="mobile-status-text" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+              연속 학습: <strong>{profile.streak}일</strong> | 골드: <strong>{profile.gold}G</strong> | 현재 등급: 
+              <strong 
+                onClick={() => {
+                  setShowRankGuide(true);
+                  if (profile.soundOn && 'speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance("수련생 등급 가이드 안내창을 엽니다.");
+                    utterance.lang = 'ko-KR';
+                    window.speechSynthesis.speak(utterance);
+                  }
+                }} 
+                style={{ 
+                  color: 'var(--color-primary)', 
+                  cursor: 'pointer', 
+                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  border: '1px dashed var(--color-primary)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '2px',
+                  transition: 'all 0.2s',
+                  marginLeft: '2px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--color-primary)';
+                  e.currentTarget.style.color = '#ffffff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.08)';
+                  e.currentTarget.style.color = 'var(--color-primary)';
+                }}
+                title="등급업 기준 보기"
+              >
+                {getRankByXp(profile.xp).name} 🔍
+              </strong>
             </p>
             <button
               onClick={onLogout}
@@ -881,6 +917,214 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
       {profile && profile.isLoggedIn && (
         <Leaderboard profile={profile} />
       )}
+
+      {/* 🔮 등급 안내 가이드 모달 (Rank Guide Modal) */}
+      {showRankGuide && (() => {
+        const xp = profile?.xp ?? 0;
+        const currentRank = getRankByXp(xp);
+        const currentRankIndex = RANKS.findIndex(r => r.name === currentRank.name);
+        const nextRank = currentRankIndex < RANKS.length - 1 ? RANKS[currentRankIndex + 1] : null;
+
+        let progressPercent = 100;
+        let nextRankXpRemaining = 0;
+        if (nextRank) {
+          const range = nextRank.minXp - currentRank.minXp;
+          const currentProgress = xp - currentRank.minXp;
+          progressPercent = Math.min(Math.max((currentProgress / range) * 100, 0), 100);
+          nextRankXpRemaining = nextRank.minXp - xp;
+        }
+
+        return (
+          <div 
+            onClick={() => setShowRankGuide(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.4)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              animation: 'fadeIn 0.2s ease-out'
+            }}
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="glass-card"
+              style={{
+                width: '100%',
+                maxWidth: '520px',
+                padding: '24px',
+                position: 'relative',
+                animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                border: '2px solid var(--color-primary)',
+                background: 'linear-gradient(135deg, #ffffff 0%, #fcfcfd 100%)',
+                boxShadow: '0 25px 50px -12px rgba(4, 120, 87, 0.15)'
+              }}
+            >
+              {/* Close Button */}
+              <button 
+                onClick={() => setShowRankGuide(false)}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  borderRadius: '50%',
+                  transition: 'background-color 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <X size={18} />
+              </button>
+
+              {/* Title Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <Award size={24} color="var(--color-primary)" />
+                <h2 className="font-display" style={{ fontSize: '1.25rem', color: 'var(--color-primary)', margin: 0 }}>
+                  조선 왕실 수련생 등급 가이드
+                </h2>
+              </div>
+
+              {/* User Current Status Summary */}
+              <div style={{
+                backgroundColor: 'rgba(16, 185, 129, 0.04)',
+                border: '1px solid rgba(16, 185, 129, 0.15)',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                marginBottom: '20px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                    <strong>{profile?.username || '수련생'}</strong> 님의 수련 성과
+                  </span>
+                  <span style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    backgroundColor: 'var(--color-primary)',
+                    color: 'white',
+                    padding: '2px 8px',
+                    borderRadius: '10px'
+                  }}>
+                    {currentRank.name}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: '0.8rem', marginBottom: '10px' }}>
+                  현재 누적 경험치: <strong style={{ color: 'var(--color-secondary)' }}>{xp} XP</strong>
+                </div>
+
+                {/* Progress bar logic */}
+                {nextRank ? (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                      <span>다음 등급: <strong>{nextRank.name}</strong></span>
+                      <span>남은 경험치: <strong>{nextRankXpRemaining} XP</strong></span>
+                    </div>
+                    {/* Gauge Bar */}
+                    <div style={{
+                      height: '8px',
+                      backgroundColor: '#e2e8f0',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}>
+                      <div style={{
+                        width: `${progressPercent}%`,
+                        height: '100%',
+                        background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
+                        borderRadius: '4px',
+                        transition: 'width 0.4s ease-out'
+                      }} />
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#b45309', fontWeight: 'bold' }}>
+                    <Sparkles size={14} />
+                    <span>축하합니다! 최고 영예 등급인 대제학(大提學)의 왕관을 쓰셨습니다.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Ranks Criteria Table */}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--color-border)', color: 'var(--color-text-muted)', fontWeight: 'bold' }}>
+                      <th style={{ padding: '8px 4px' }}>등급명</th>
+                      <th style={{ padding: '8px 4px', textAlign: 'right' }}>최소 XP</th>
+                      <th style={{ padding: '8px 12px' }}>등급 묘사 및 혜택</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {RANKS.map((r, i) => {
+                      const isCurrent = r.name === currentRank.name;
+                      return (
+                        <tr 
+                          key={i}
+                          style={{
+                            borderBottom: '1px solid var(--color-border)',
+                            backgroundColor: isCurrent ? 'rgba(16, 185, 129, 0.05)' : 'transparent',
+                            borderLeft: isCurrent ? '3px solid var(--color-primary)' : 'none',
+                            fontWeight: isCurrent ? 'bold' : 'normal'
+                          }}
+                        >
+                          <td style={{ padding: '10px 4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {r.name}
+                            {isCurrent && (
+                              <span style={{
+                                fontSize: '0.62rem',
+                                color: 'var(--color-primary)',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                padding: '1px 4px',
+                                borderRadius: '3px',
+                                fontWeight: 'bold',
+                                border: '1px solid rgba(16, 185, 129, 0.2)'
+                              }}>
+                                내 등급
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px 4px', textAlign: 'right', color: 'var(--color-secondary)' }}>
+                            {r.minXp} XP
+                          </td>
+                          <td style={{ padding: '10px 12px', fontSize: '0.72rem', color: isCurrent ? 'var(--color-primary-dark)' : 'var(--color-text-muted)' }}>
+                            {r.description}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Bottom guide notice */}
+              <div style={{
+                textAlign: 'center',
+                marginTop: '16px',
+                fontSize: '0.68rem',
+                color: 'var(--color-text-muted)'
+              }}>
+                수련에 정진하여 더 높은 관직과 명예에 도전하십시오!
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
