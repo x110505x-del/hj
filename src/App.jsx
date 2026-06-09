@@ -16,6 +16,7 @@ export default function App() {
   const [soundOn, setSoundOn] = useState(true);
   const [profile, setProfile] = useState(() => getProfile());
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [showNotice, setShowNotice] = useState(true);
 
   const handleLogout = () => {
     const updated = {
@@ -306,20 +307,63 @@ export default function App() {
         boxSizing: 'border-box'
       }}>
         {currentScreen === 'selector' && (
-          <LevelSelector
-            selectedLevel={selectedLevel}
-            onSelectLevel={setSelectedLevel}
-            onStartMode={setCurrentScreen}
-            soundOn={soundOn}
-            onToggleSound={handleToggleSound}
-            profile={profile}
-            onOpenLoginModal={() => setIsLoginOpen(true)}
-            onLogout={handleLogout}
-            onUpdateProfile={(updated) => {
-              setProfile(updated);
-              saveProfile(updated);
-            }}
-          />
+          <div style={{ width: '100%', maxWidth: '950px', margin: '0 auto' }}>
+            {showNotice && (
+              <div style={{
+                marginBottom: '20px',
+                backgroundColor: '#fffbeb',
+                border: '1px solid #fde68a',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.4rem' }}>🚧</span>
+                  <span style={{ color: '#92400e', fontWeight: 'bold', fontSize: '0.95rem' }}>
+                    현재 잔잔한 오류를 수정중 입니다. 조금만 기다려 주세요!
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setShowNotice(false)}
+                  style={{
+                    background: 'rgba(146, 64, 14, 0.1)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    color: '#92400e',
+                    cursor: 'pointer',
+                    width: '28px',
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(146, 64, 14, 0.2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(146, 64, 14, 0.1)'}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <LevelSelector
+              selectedLevel={selectedLevel}
+              onSelectLevel={setSelectedLevel}
+              onStartMode={setCurrentScreen}
+              soundOn={soundOn}
+              onToggleSound={handleToggleSound}
+              profile={profile}
+              onOpenLoginModal={() => setIsLoginOpen(true)}
+              onLogout={handleLogout}
+              onUpdateProfile={(updated) => {
+                setProfile(updated);
+                saveProfile(updated);
+              }}
+            />
+          </div>
         )}
 
         {currentScreen === 'flashcard' && (
