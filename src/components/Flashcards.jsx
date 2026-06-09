@@ -68,12 +68,12 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound, onSt
         skipCancel: immediate === true,
         onEnd: () => {
           if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
-            // Wait 1 second (1000ms) after speech ends before advancing to the next card
+            // Wait 1.8 seconds (1800ms) after speech ends before advancing to the next card to prevent cutoff
             timerNextRef.current = setTimeout(() => {
               if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
                 advanceLearnCard();
               }
-            }, 1000);
+            }, 1800);
           }
         },
         onError: (err) => {
@@ -83,7 +83,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound, onSt
               if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
                 advanceLearnCard();
               }
-            }, 1000);
+            }, 1800);
           }
         }
       });
@@ -130,12 +130,12 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound, onSt
         repeatTwice: false, // Review mode reads only once!
         onEnd: () => {
           if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
-            // Wait 1 second before advancing
+            // Wait 1.8 seconds before advancing to prevent audio tail cutoff
             timerNextRef.current = setTimeout(() => {
               if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
                 advanceReviewCard();
               }
-            }, 1000);
+            }, 1800);
           }
         },
         onError: (err) => {
@@ -145,7 +145,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound, onSt
               if (index === currentIndexRef.current && !isSequenceCancelledRef.current && !isPaused) {
                 advanceReviewCard();
               }
-            }, 1000);
+            }, 1800);
           }
         }
       });
