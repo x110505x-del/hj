@@ -345,10 +345,9 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
           )}
         </div>
 
-        {/* Options Row - Single line with horizontal scroll on mobile */}
+        {/* Options Grid - 3 items per row, 2 rows total */}
         <div style={{
-          display: 'flex', gap: '8px', width: '100%', overflowX: 'auto', 
-          paddingBottom: '8px', WebkitOverflowScrolling: 'touch'
+          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', width: '100%'
         }}>
           {currentOptions.map((opt, idx) => (
             <button
@@ -356,18 +355,16 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               disabled={!!feedback}
               onClick={() => handleAnswer(opt)}
               style={{
-                flex: '1 0 72px', // Grow evenly, never shrink below 72px
-                padding: '12px 4px', borderRadius: '12px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
-                fontSize: '0.8rem', fontWeight: 'bold', color: '#1f2937', cursor: feedback ? 'default' : 'pointer',
-                transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'center',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-                wordBreak: 'keep-all'
+                padding: '12px 4px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
+                cursor: feedback ? 'default' : 'pointer', transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                whiteSpace: 'nowrap', overflow: 'hidden'
               }}
               onMouseEnter={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.03)'; } }}
               onMouseLeave={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.backgroundColor = '#ffffff'; } }}
             >
-              <span style={{ color: 'var(--color-text-muted)', lineHeight: '1.1' }}>{opt.meaning}</span>
-              <span style={{ color: 'var(--color-accent)', fontSize: '1.05rem', lineHeight: '1.1' }}>{opt.sound}</span>
+              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden' }}>{opt.meaning}</span>
+              <span style={{ color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 'bold' }}>{opt.sound}</span>
             </button>
           ))}
         </div>
