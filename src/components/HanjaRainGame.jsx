@@ -186,7 +186,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
         const hitItems = [];
         const updated = currentFalling.map((item) => {
           const nextY = item.y + item.speed;
-          if (nextY >= 82) { // 82% is the bottom floor limit
+          if (nextY >= 77.2) { // 77.2% triggers collision exactly when the glyph's bottom edge touches the red dashed line (82%)
             reachedBottomCount++;
             hitItems.push({ ...item, y: nextY, hitFloor: true });
             return { ...item, y: nextY, hitFloor: true };
