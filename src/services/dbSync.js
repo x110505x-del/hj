@@ -323,8 +323,9 @@ export async function getCloudAdminUsersList() {
  */
 export async function fetchGlobalNotice() {
   try {
-    const url = `${KV_BASE_URL}global_notice`;
-    const response = await fetch(url);
+    // Add a timestamp cache buster to completely avoid browser disk caching
+    const url = `${KV_BASE_URL}global_notice?t=${Date.now()}`;
+    const response = await fetch(url, { cache: 'no-store' });
     if (response.ok) {
       const data = await response.json();
       return data; // Expected shape: { text: "...", isVisible: boolean }

@@ -22,13 +22,18 @@ export default function App() {
   const [noticeText, setNoticeText] = useState('');
 
   useEffect(() => {
-    fetchGlobalNotice().then(notice => {
-      if (notice && notice.isVisible && notice.text) {
-        setNoticeText(notice.text);
-        setShowNotice(true);
-      }
-    });
-  }, []);
+    if (currentScreen === 'selector') {
+      fetchGlobalNotice().then(notice => {
+        if (notice && notice.isVisible && notice.text) {
+          setNoticeText(notice.text);
+          setShowNotice(true);
+        } else {
+          setShowNotice(false);
+          setNoticeText('');
+        }
+      });
+    }
+  }, [currentScreen]);
 
   const handleLogout = () => {
     const updated = {
