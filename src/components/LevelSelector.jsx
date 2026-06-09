@@ -229,7 +229,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
               </div>
             )}
             <p className="mobile-status-text" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
-              연속 학습: <strong>{profile.streak}일</strong> | 골드: <strong>{profile.gold}G</strong> | 현재 등급: 
+              XP: <strong>{profile.xp}</strong> | 골드: <strong>{profile.gold}G</strong> | 현재 등급: 
               <strong 
                 onClick={() => {
                   setShowRankGuide(true);
@@ -672,7 +672,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           alignItems: 'center',
           gap: '8px'
         }}>
-          <span>📊</span> 나의 학습 분석 및 오답노트
+          <span>📊</span> 수련 기록 로그 및 오답노트
         </h2>
 
         {!profile || !profile.isLoggedIn ? (

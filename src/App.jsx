@@ -8,7 +8,7 @@ import HanjaRevealGame from './components/HanjaRevealGame';
 import FeedbackWidget from './components/FeedbackWidget';
 import LoginModal from './components/LoginModal';
 import AdminPanel from './components/AdminPanel';
-import { getProfile, saveProfile } from './services/mockDb';
+import { getProfile, saveProfile, getKstDateString } from './services/mockDb';
 import { Volume2, VolumeX } from 'lucide-react';
 
 export default function App() {
@@ -32,7 +32,7 @@ export default function App() {
   };
 
   const handleCompleteGame = (goldEarned, xpEarned, isSuccess = true) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getKstDateString();
     let updated = getProfile();
 
     // 1. Reset daily count if date changed
@@ -45,15 +45,14 @@ export default function App() {
     updated.gold += goldEarned;
     updated.xp += xpEarned;
 
-    // 3. Perform daily check-in (streak) if not already done today AND the game was successful!
+    // 3. Perform daily check-in (streak) if not already done today AND the user earned gold or succeeded!
     let streakMsg = '';
-    if (isSuccess && updated.streakLastActive !== today) {
+    if ((isSuccess || goldEarned > 0) && updated.streakLastActive !== today) {
       let streak = updated.streak;
       if (updated.streakLastActive) {
-        const lastActive = new Date(updated.streakLastActive);
-        const todayDate = new Date(today);
-        const diffTime = Math.abs(todayDate - lastActive);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const last = new Date(updated.streakLastActive + 'T00:00:00Z');
+        const curr = new Date(today + 'T00:00:00Z');
+        const diffDays = Math.round((curr - last) / (1000 * 60 * 60 * 24));
         if (diffDays === 1) {
           streak += 1;
         } else if (diffDays > 1) {
@@ -93,7 +92,7 @@ export default function App() {
   };
 
   const handleStudyCard = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getKstDateString();
     let updated = getProfile();
 
     // 1. Reset daily count if date changed
@@ -109,10 +108,9 @@ export default function App() {
     if (updated.flashcardsToday === 50 && updated.streakLastActive !== today) {
       let streak = updated.streak;
       if (updated.streakLastActive) {
-        const lastActive = new Date(updated.streakLastActive);
-        const todayDate = new Date(today);
-        const diffTime = Math.abs(todayDate - lastActive);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const last = new Date(updated.streakLastActive + 'T00:00:00Z');
+        const curr = new Date(today + 'T00:00:00Z');
+        const diffDays = Math.round((curr - last) / (1000 * 60 * 60 * 24));
         if (diffDays === 1) {
           streak += 1;
         } else if (diffDays > 1) {

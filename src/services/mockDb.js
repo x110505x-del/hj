@@ -331,12 +331,18 @@ export const getAdminUsersList = () => {
   return localUsers;
 };
 
+// Get current date string in KST (Korean Standard Time)
+export const getKstDateString = () => {
+  const kstOffset = 9 * 60 * 60 * 1000;
+  return new Date(Date.now() + kstOffset).toISOString().split('T')[0];
+};
+
 // Update Streak daily check-in logic
 export const checkIn = () => {
   const profile = getProfile();
-  const today = new Date().toISOString().split('T')[0];
+  const todayStr = getKstDateString();
   
-  if (profile.streakLastActive === today) {
+  if (profile.streakLastActive === todayStr) {
     return { success: false, message: '오늘 이미 학습 출석을 완료했습니다!' };
   }
 
@@ -344,29 +350,27 @@ export const checkIn = () => {
   let message = '';
   
   if (profile.streakLastActive) {
-    const lastDate = new Date(profile.streakLastActive);
-    const todayDate = new Date(today);
-    const diffTime = Math.abs(todayDate - lastDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const last = new Date(profile.streakLastActive + 'T00:00:00Z');
+    const curr = new Date(todayStr + 'T00:00:00Z');
+    const diffDays = Math.round((curr - last) / (1000 * 60 * 60 * 24));
     
     if (diffDays === 1) {
       streak += 1;
-      message = `연속 ${streak}일 학습 체크인 성공! 🔥`;
+      message = `연속 ${streak}일 수련 성공! 🔥`;
     } else if (diffDays > 1) {
       streak = 1;
-      message = `학습 기록이 끊겼습니다. 새로 1일차 학습을 시작합니다! (수련 복구권을 상점에서 구매해 복구할 수 있습니다)`;
+      message = `수련 기록이 끊겼습니다. 새로 1일차 수련을 시작합니다! (수련 복구권을 상점에서 구매해 복구할 수 있습니다)`;
     }
   } else {
     streak = 1;
-    message = '첫 학습 기록을 등록하셨습니다. 정진하십시오! 🚀';
+    message = '첫 수련 기록을 등록하셨습니다. 정진하십시오! 🚀';
   }
   
   profile.streak = streak;
-  profile.streakLastActive = today;
-  profile.xp += 30;
+  profile.streakLastActive = todayStr;
   
   saveProfile(profile);
-  return { success: true, streak, goldBonus: 0, xpBonus: 30, message };
+  return { success: true, streak, goldBonus: 0, xpBonus: 0, message };
 };
 
 export const getLeaderboard = () => {
