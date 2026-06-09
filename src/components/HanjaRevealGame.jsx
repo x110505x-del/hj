@@ -345,9 +345,9 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
           )}
         </div>
 
-        {/* Options Grid - 3 items per row, 2 rows total */}
+        {/* Options Grid - Responsive: 6 items per row on PC, 3 on Mobile */}
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', width: '100%'
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', width: '100%'
         }}>
           {currentOptions.map((opt, idx) => (
             <button
@@ -355,16 +355,16 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               disabled={!!feedback}
               onClick={() => handleAnswer(opt)}
               style={{
-                padding: 'clamp(12px, 2vw, 20px) 4px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
+                padding: '12px 4px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
                 cursor: feedback ? 'default' : 'pointer', transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                whiteSpace: 'nowrap', overflow: 'hidden'
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                overflow: 'hidden'
               }}
               onMouseEnter={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.03)'; } }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.backgroundColor = '#ffffff'; }}
             >
-              <span style={{ color: 'var(--color-text-muted)', fontSize: 'clamp(0.75rem, 1.5vw, 1rem)', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden' }}>{opt.meaning}</span>
-              <span style={{ color: 'var(--color-accent)', fontSize: 'clamp(0.9rem, 2vw, 1.3rem)', fontWeight: 'bold' }}>{opt.sound}</span>
+              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>{opt.meaning}</span>
+              <span style={{ color: 'var(--color-accent)', fontSize: '1rem', fontWeight: 'bold' }}>{opt.sound}</span>
             </button>
           ))}
         </div>
