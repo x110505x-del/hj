@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Award, Trophy, Users, RefreshCw, Loader2 } from 'lucide-react';
 import { fetchGlobalLeaderboard } from '../services/dbSync';
+import { getRankByXp } from '../services/rankDb';
 
 // Simple hashing function to obfuscate the email address for privacy (matching dbSync.js)
 function obfuscateEmail(email) {
@@ -39,6 +40,7 @@ export default function Leaderboard({ profile }) {
             username: profile.username, // Force latest nickname from local state
             gold: profile.gold,
             xp: profile.xp,
+            rankName: getRankByXp(profile.xp, profile.streak || 0).name,
             isUser: true
           };
         }
@@ -68,11 +70,7 @@ export default function Leaderboard({ profile }) {
       // optimistically inject them so they see themselves instantly.
       const hasUserInBoard = mapped.some(u => u.isUser);
       if (profile.isLoggedIn && !hasUserInBoard) {
-        let rName = '유생 (儒生)';
-        if (profile.xp >= 1500) rName = '진사 (進士)';
-        if (profile.xp >= 3500) rName = '장원급제 (壯元及第)';
-        if (profile.xp >= 6000) rName = '한림학사 (翰林學士)';
-        if (profile.xp >= 10000) rName = '대제학 (大提學)';
+        const rName = getRankByXp(profile.xp || 0, profile.streak || 0).name;
 
         mapped.push({
           id: myId,
@@ -98,7 +96,7 @@ export default function Leaderboard({ profile }) {
     // Refresh periodically
     const timer = setInterval(refreshData, 30000);
     return () => clearInterval(timer);
-  }, [profile.gold, profile.username]);
+  }, [profile.gold, profile.username, profile.streak]);
 
   return (
     <div style={{ width: '100%', marginTop: '24px' }}>
