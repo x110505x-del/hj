@@ -218,3 +218,5 @@
    * **수호 규칙:** `dbSync.js`의 `fetchGlobalNotice` 함수 내 GET 요청은 항상 브라우저 캐시에 감염되지 않도록 `?t=${Date.now()}` 파라미터와 `{ cache: 'no-store' }` 헤더를 반드시 동반해야만, 여러 장비 간의 실시간 업데이트 격차를 막고 팝업을 즉시 반영할 수 있습니다.
 14. **[출석 로직] 클라우드 동기화 시 Streak 데이터 보존 락 (Cloud Sync Streak Lock):**
    * **수호 규칙:** `dbSync.js`의 `saveProfileToCloud`와 `loadProfileFromCloud` 페이로드에 반드시 `streakLastActive`, `lastActiveDate`, `flashcardsToday` 항목을 포함해야 합니다. 이를 누락할 경우 로그인/재로그인 시 유저의 연속 학습일 기준점(KST)이 삭제되어 무조건 스트릭이 1일로 리셋되는 치명적 버그가 재발합니다.
+15. **[랭킹] 리더보드 실시간 동기화 락 (Leaderboard Sync Lock):**
+   * **수호 규칙:** `Leaderboard.jsx`에서 로그인 유저의 랭킹 정보를 즉각 렌더링(Optimistic UI)할 때, 하드코딩된 경험치 구간이 아닌 메인 등급 판정 모듈(`getRankByXp`)을 사용하여 `profile.xp`와 `profile.streak` 두 조건을 모두 적용해야 합니다. 또한 데이터 갱신 `useEffect` 의존성 배열에 반드시 `profile.streak`를 포함시켜 연속 출석일 갱신 시 랭킹 보드도 실시간으로 리렌더링되도록 유지해야 합니다.
