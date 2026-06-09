@@ -8,7 +8,7 @@ export default function ProfileSetup({ profile, onUpdateProfile, onNavigate }) {
   const [currentLevel, setCurrentLevel] = useState(profile.currentLevel);
   const [feedback, setFeedback] = useState('');
 
-  const currentRank = getRankByXp(profile.xp);
+  const currentRank = getRankByXp(profile.xp, profile.streak ?? 0);
 
   // Play standard Voice synthesis preview
   const playVoicePreview = () => {
@@ -110,7 +110,7 @@ export default function ProfileSetup({ profile, onUpdateProfile, onNavigate }) {
             <div>
               <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>현재 칭호 및 신분</div>
               <div style={{ fontSize: '1.05rem', fontWeight: 'bold', color: 'var(--color-secondary)' }}>
-                {currentRank.name}
+                {currentRank.badge} {currentRank.name}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                 누적 경험치: {profile.xp} XP

@@ -257,7 +257,10 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 }}
                 title="등급업 기준 보기"
               >
-                {getRankByXp(profile.xp, profile.streak).name} 🔍
+                {(() => {
+                  const rank = getRankByXp(profile.xp, profile.streak);
+                  return `${rank.badge} ${rank.name}`;
+                })()} 🔍
               </strong>
             </p>
             <button
@@ -1000,7 +1003,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <Award size={24} color="var(--color-primary)" />
                 <h2 className="font-display" style={{ fontSize: '1.25rem', color: 'var(--color-primary)', margin: 0 }}>
-                  조선 왕실 수련생 등급 가이드
+                  수련생 등급 가이드
                 </h2>
               </div>
 
@@ -1024,7 +1027,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                     padding: '2px 8px',
                     borderRadius: '10px'
                   }}>
-                    {currentRank.name}
+                    {currentRank.badge} {currentRank.name}
                   </span>
                 </div>
 
@@ -1037,7 +1040,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 {nextRank ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 'bold' }}>
-                      다음 등급 <strong>{nextRank.name}</strong> 승급 요건:
+                      다음 등급 <strong>{nextRank.badge} {nextRank.name}</strong> 승급 요건:
                     </div>
                     
                     {/* XP Progress */}
@@ -1122,8 +1125,9 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                             fontWeight: isCurrent ? 'bold' : 'normal'
                           }}
                         >
-                          <td style={{ padding: '10px 4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            {r.name}
+                          <td style={{ padding: '10px 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '1rem' }}>{r.badge}</span>
+                            <span>{r.name}</span>
                             {isCurrent && (
                               <span style={{
                                 fontSize: '0.62rem',

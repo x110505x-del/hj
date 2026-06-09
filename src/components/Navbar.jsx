@@ -3,7 +3,7 @@ import { Volume2, VolumeX, Flame, Coins, Shield, LogIn, LogOut, User, MessageSqu
 import { getRankByXp } from '../services/mockDb';
 
 export default function Navbar({ profile, onUpdateProfile, currentScreen, onNavigate, onOpenLoginModal }) {
-  const currentRank = getRankByXp(profile.xp);
+  const currentRank = getRankByXp(profile.xp, profile.streak ?? 0);
 
   const toggleSound = () => {
     onUpdateProfile({
