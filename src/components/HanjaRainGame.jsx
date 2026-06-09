@@ -163,37 +163,25 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     };
   }, [level, hasStarted]);
 
-  // Handle spawn interval when game is active and not paused (prevents Y=0 freezing/crowding in background)
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-
-    if (isPaused) {
-      if (spawnTimerRef.current) {
-        clearInterval(spawnTimerRef.current);
-        spawnTimerRef.current = null;
-      }
-    } else {
-      // Spawn new item every 3 seconds when active
-      if (!spawnTimerRef.current) {
-        spawnTimerRef.current = setInterval(() => {
-          spawnHanja();
-        }, 3000);
-      }
-    }
-
-    return () => {
-      if (spawnTimerRef.current) {
-        clearInterval(spawnTimerRef.current);
-        spawnTimerRef.current = null;
-      }
-    };
-  }, [gameState, isPaused]);
+  const lastSpawnTimeRef = useRef(0);
 
   // Main game loop (using requestAnimationFrame for smooth falling)
   useEffect(() => {
     if (gameState !== 'playing' || isPaused) return;
 
-    const updateGame = () => {
+    let rAF;
+    const updateGame = (timestamp) => {
+      // Synchronized Spawn Logic:
+      // By tying spawning strictly to the animation frame loop, we perfectly evade 
+      // PC browser background throttling desync bugs. If rAF stops, spawning stops.
+      if (!lastSpawnTimeRef.current) lastSpawnTimeRef.current = timestamp;
+      const deltaTime = timestamp - lastSpawnTimeRef.current;
+      
+      if (deltaTime >= 3000) {
+        spawnHanja();
+        lastSpawnTimeRef.current = timestamp;
+      }
+
       // 1. Update falling character positions
       setFallingHanja((prev) => {
         if (prev.length === 0) return prev; // Optimize: Do nothing if no Hanja
@@ -264,19 +252,19 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
         })).filter((p) => p.alpha > 0);
       });
 
-      animationFrameRef.current = requestAnimationFrame(updateGame);
+      rAF = requestAnimationFrame(updateGame);
+      animationFrameRef.current = rAF;
     };
 
-    animationFrameRef.current = requestAnimationFrame(updateGame);
+    rAF = requestAnimationFrame(updateGame);
+    animationFrameRef.current = rAF;
 
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (rAF) {
+        cancelAnimationFrame(rAF);
       }
     };
   }, [gameState, soundOn, isPaused, hasStarted]);
-
-
 
 
 
@@ -326,8 +314,14 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     setCombo(0);
     setMaxCombo(0);
     nextHanjaId.current = 0;
+    
+    // Force unlock any background visibility throttle state on PC desktop
+    setIsPaused(false);
+    isPausedRef.current = false;
 
-    // Set spawn intervals
+    // Reset baseline spawn timer for requestAnimationFrame synchronisation
+    lastSpawnTimeRef.current = performance.now();
+
     stopGameTimers();
     spawnHanja(); // Spawn first one immediately
   };
