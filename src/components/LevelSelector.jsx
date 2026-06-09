@@ -965,7 +965,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
               className="glass-card"
               style={{
                 width: '100%',
-                maxWidth: '500px',
+                maxWidth: '540px',
                 maxHeight: '90vh',
                 overflowY: 'auto',
                 padding: '20px',
@@ -1106,12 +1106,12 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
 
               {/* Ranks Criteria Table */}
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--color-border)', color: 'var(--color-text-muted)', fontWeight: 'bold' }}>
-                      <th style={{ padding: '8px 4px' }}>등급명</th>
-                      <th style={{ padding: '8px 4px', textAlign: 'right' }}>최소 XP</th>
-                      <th style={{ padding: '8px 4px', textAlign: 'right' }}>연속 학습</th>
+                      <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>등급명</th>
+                      <th style={{ padding: '8px 4px', textAlign: 'right', whiteSpace: 'nowrap' }}>최소 XP</th>
+                      <th style={{ padding: '8px 4px', textAlign: 'right', whiteSpace: 'nowrap' }}>연속 학습</th>
                       <th style={{ padding: '8px 12px' }}>등급 묘사 및 혜택</th>
                     </tr>
                   </thead>
@@ -1128,30 +1128,32 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                             fontWeight: isCurrent ? 'bold' : 'normal'
                           }}
                         >
-                          <td style={{ padding: '10px 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '1rem' }}>{r.badge}</span>
-                            <span>{r.name}</span>
+                          <td style={{ padding: '8px 4px', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: '0.9rem', marginRight: '2px', flexShrink: 0 }}>{r.badge}</span>
+                            <span style={{ flexShrink: 0 }}>{r.name}</span>
                             {isCurrent && (
                               <span style={{
-                                fontSize: '0.62rem',
+                                fontSize: '0.58rem',
                                 color: 'var(--color-primary)',
                                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                padding: '1px 4px',
+                                padding: '1px 3px',
                                 borderRadius: '3px',
                                 fontWeight: 'bold',
-                                border: '1px solid rgba(16, 185, 129, 0.2)'
+                                border: '1px solid rgba(16, 185, 129, 0.2)',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0
                               }}>
                                 내 등급
                               </span>
                             )}
                           </td>
-                          <td style={{ padding: '10px 4px', textAlign: 'right', color: 'var(--color-secondary)' }}>
+                          <td style={{ padding: '8px 4px', textAlign: 'right', color: 'var(--color-secondary)', whiteSpace: 'nowrap' }}>
                             {r.minXp} XP
                           </td>
-                          <td style={{ padding: '10px 4px', textAlign: 'right', color: 'var(--color-primary)' }}>
+                          <td style={{ padding: '8px 4px', textAlign: 'right', color: 'var(--color-primary)', whiteSpace: 'nowrap' }}>
                             {r.minStreak}일 이상
                           </td>
-                          <td style={{ padding: '10px 12px', fontSize: '0.72rem', color: isCurrent ? 'var(--color-primary-dark)' : 'var(--color-text-muted)' }}>
+                          <td style={{ padding: '8px 12px', fontSize: '0.68rem', color: isCurrent ? 'var(--color-primary-dark)' : 'var(--color-text-muted)' }}>
                             {r.description}
                           </td>
                         </tr>
