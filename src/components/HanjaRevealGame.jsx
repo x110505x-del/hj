@@ -351,7 +351,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
         }}>
           {currentOptions.map((opt, idx) => (
             <button
-              key={idx}
+              key={target.char + '-' + idx}
               disabled={!!feedback}
               onClick={() => handleAnswer(opt)}
               style={{
@@ -361,7 +361,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
                 whiteSpace: 'nowrap', overflow: 'hidden'
               }}
               onMouseEnter={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.03)'; } }}
-              onMouseLeave={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.backgroundColor = '#ffffff'; } }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.backgroundColor = '#ffffff'; }}
             >
               <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden' }}>{opt.meaning}</span>
               <span style={{ color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 'bold' }}>{opt.sound}</span>
