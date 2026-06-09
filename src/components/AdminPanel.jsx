@@ -223,10 +223,10 @@ export default function AdminPanel({ profile }) {
                 >
                   <div>
                     <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: selectedPost?.id === f.id ? 'var(--color-primary)' : 'inherit' }}>
-                      {f.title}
+                      {f.title || `💬 ${f.content ? f.content.substring(0, 15) + (f.content.length > 15 ? '...' : '') : '내용 없는 건의'}`}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                      작성자: {f.author} | {f.category}
+                      작성자: {f.author || f.contact || '익명 수련생'} | {f.category || (f.type === 'bug' ? '기술 오류' : f.type === 'ux' ? '사용 불편' : '개선 건의')}
                     </div>
                   </div>
                   
@@ -244,9 +244,11 @@ export default function AdminPanel({ profile }) {
           {selectedPost && (
             <div className="glass-card" style={{ padding: '16px' }}>
               <div style={{ borderBottom: '1px solid var(--color-border)', paddingBottom: '10px', marginBottom: '12px' }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold' }}>{selectedPost.title}</h4>
+                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold' }}>
+                  {selectedPost.title || (selectedPost.type === 'bug' ? '🐛 기술 오류 제보' : selectedPost.type === 'ux' ? '🙁 사용 불편 신고' : '💡 개선 건의사항')}
+                </h4>
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                  작성자: {selectedPost.author} | 본문 비공개 해제 상태 (Admin)
+                  작성자: {selectedPost.author || selectedPost.contact || '익명 수련생'} | 본문 비공개 해제 상태 (Admin)
                 </div>
               </div>
 
@@ -261,7 +263,7 @@ export default function AdminPanel({ profile }) {
                 whiteSpace: 'pre-wrap',
                 marginBottom: '16px'
               }}>
-                {selectedPost.body}
+                {selectedPost.body || selectedPost.content}
               </div>
 
               {/* Reply Form */}
