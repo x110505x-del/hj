@@ -163,15 +163,37 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     };
   }, [level, hasStarted]);
 
-  // Main game loop (using requestAnimationFrame for smooth falling)
+  // Handle spawn interval when game is active and not paused (prevents Y=0 freezing/crowding in background)
   useEffect(() => {
     if (gameState !== 'playing') return;
 
-    const updateGame = () => {
-      if (isPausedRef.current) {
-        animationFrameRef.current = requestAnimationFrame(updateGame);
-        return;
+    if (isPaused) {
+      if (spawnTimerRef.current) {
+        clearInterval(spawnTimerRef.current);
+        spawnTimerRef.current = null;
       }
+    } else {
+      // Spawn new item every 3 seconds when active
+      if (!spawnTimerRef.current) {
+        spawnTimerRef.current = setInterval(() => {
+          spawnHanja();
+        }, 3000);
+      }
+    }
+
+    return () => {
+      if (spawnTimerRef.current) {
+        clearInterval(spawnTimerRef.current);
+        spawnTimerRef.current = null;
+      }
+    };
+  }, [gameState, isPaused]);
+
+  // Main game loop (using requestAnimationFrame for smooth falling)
+  useEffect(() => {
+    if (gameState !== 'playing' || isPaused) return;
+
+    const updateGame = () => {
       // 1. Update falling character positions
       setFallingHanja((prev) => {
         if (prev.length === 0) return prev; // Optimize: Do nothing if no Hanja
@@ -308,12 +330,6 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     // Set spawn intervals
     stopGameTimers();
     spawnHanja(); // Spawn first one immediately
-    
-    // Spawn a character every 3.0 seconds
-    spawnTimerRef.current = setInterval(() => {
-      if (isPausedRef.current) return;
-      spawnHanja();
-    }, 3000);
   };
 
   const stopGameTimers = () => {
