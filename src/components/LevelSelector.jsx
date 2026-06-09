@@ -196,38 +196,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                 </>
               )}
             </div>
-            {profile.isPrivacyFirst ? (
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                backgroundColor: '#f0fdf4',
-                color: '#166534',
-                padding: '4px 10px',
-                borderRadius: '20px',
-                fontSize: '0.75rem',
-                fontWeight: 'bold',
-                border: '1.5px solid rgba(16, 185, 129, 0.2)'
-              }}>
-                <span>🛡️ 개인정보 미수집 프로필</span>
-                <span style={{ textTransform: 'capitalize', color: 'var(--color-primary)' }}>({profile.authProvider})</span>
-              </div>
-            ) : (
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                backgroundColor: '#eff6ff',
-                color: '#1e40af',
-                padding: '4px 10px',
-                borderRadius: '20px',
-                fontSize: '0.75rem',
-                fontWeight: 'bold',
-                border: '1.5px solid rgba(59, 130, 246, 0.2)'
-              }}>
-                <span>📧 이메일 프로필</span>
-              </div>
-            )}
+            {/* 개인정보 미수집 프로필 / 이메일 프로필 표시 삭제됨 */}
             <p className="mobile-status-text" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
               XP: <strong>{profile.xp}</strong> | 골드: <strong>{profile.gold}G</strong> | 현재 등급: 
               <strong 
@@ -281,12 +250,13 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ffffff'}
             >
-              연동 해제 (로그아웃)
+              로그아웃
             </button>
           </>
         )}
 
         {/* 📅 Daily Goal Checklist */}
+        {(!profile || !profile.isLoggedIn) && (
         <div style={{
           marginTop: '8px',
           padding: '12px 14px',
@@ -337,6 +307,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
             <span><strong>골드 획득 안내:</strong> 골드는 오직 <strong>스피드 퀴즈</strong>, <strong>한자비 맞추기</strong>, <strong>가려진 한자 맞추기</strong> 수련을 통해서만 획득 가능합니다. (출석 및 쓰기 연습은 골드 미지급)</span>
           </div>
         </div>
+        )}
       </div>
 
       {/* Level Selection Control */}
@@ -779,7 +750,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                   * 최근 1주일 간의 데이터
                 </div>
                 {(() => {
-                  const recentLogs = profile.studyHistory.filter(log => new Date(log.timestamp) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+                  const recentLogs = profile.studyHistory.filter(log => log.type === '스피드 퀴즈' && new Date(log.timestamp) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
                   if (recentLogs.length === 0) {
                     return <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)' }}>최근 1주일 내 학습 기록이 없습니다.</div>;
                   }
@@ -807,16 +778,6 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
                     >
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{
-                            backgroundColor: log.type === '스피드 퀴즈' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                            color: log.type === '스피드 퀴즈' ? 'var(--color-primary)' : '#2563eb',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontSize: '0.7rem',
-                            fontWeight: 'bold'
-                          }}>
-                            {log.type}
-                          </span>
                           <strong style={{ color: '#1f2937' }}>{log.detail}</strong>
                         </div>
                         <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>{dateStr}</span>

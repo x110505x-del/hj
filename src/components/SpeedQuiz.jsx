@@ -307,7 +307,7 @@ export default function SpeedQuiz({ level, onBack, soundOn, onToggleSound, onCom
           <h2 style={{ fontSize: '1.8rem', color: 'var(--color-primary)', margin: '0 0 8px 0', fontWeight: 'bold' }}>
             스피드 퀴즈 결과
           </h2>
-          <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)' }}>{level} 테스트 결과입니다.</span>
+          <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)' }}>오답노트에서 틀린문제를 확인하세요!</span>
         </div>
 
         <div style={{

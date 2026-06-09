@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Heart, Award, RefreshCw, Volume2, VolumeX, Flame, Trophy, Play } from 'lucide-react';
 import { getHanjaByLevel } from '../services/hanjaDb';
 import { speakKorean, cancelSpeech, unlockTtsAudio } from '../utils/tts';
-import { addStudyLog, addWrongHanja } from '../services/mockDb';
+import { addStudyLog } from '../services/mockDb';
 
 export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, onCompleteGame }) {
   const allHanja = getHanjaByLevel(level, false);
@@ -200,17 +200,6 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
 
         // Safe Side-Effect Execution: OUTSIDE state updater callbacks!
         if (hitItems.length > 0) {
-          hitItems.forEach((item) => {
-            addWrongHanja({
-              id: item.id,
-              char: item.char,
-              meaning: item.meaning,
-              sound: item.sound,
-              fullMeaning: item.fullMeaning,
-              level: level
-            });
-          });
-
           setLives((prevLives) => {
             const nextLives = prevLives - hitItems.length;
             if (nextLives <= 0) {
@@ -516,20 +505,6 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       setCombo(0);
       setHighlightedId(card.id);
       
-      // Record the closest-to-bottom falling Hanja as a wrong answer (since the user clicked the wrong meaning card)
-      if (fallingHanja.length > 0) {
-        const sortedFalling = [...fallingHanja].sort((a, b) => b.y - a.y);
-        const targetWrongItem = sortedFalling[0];
-        addWrongHanja({
-          id: targetWrongItem.id,
-          char: targetWrongItem.char,
-          meaning: targetWrongItem.meaning,
-          sound: targetWrongItem.sound,
-          fullMeaning: targetWrongItem.fullMeaning,
-          level: level
-        });
-      }
-
       setTimeout(() => setHighlightedId(null), 300);
     }
   };
