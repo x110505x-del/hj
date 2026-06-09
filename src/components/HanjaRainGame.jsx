@@ -11,8 +11,13 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [fallingHanja, setFallingHanja] = useState([]);
+  const fallingHanjaRef = useRef([]);
+
   const [bottomCards, setBottomCards] = useState([]);
+  
   const [particles, setParticles] = useState([]);
+  const particlesRef = useRef([]);
+
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   const [highlightedId, setHighlightedId] = useState(null);
@@ -162,13 +167,12 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
         lastSpawnTimeRef.current = timestamp;
       }
 
-      // 1. Update falling character positions
-      setFallingHanja((prev) => {
-        if (prev.length === 0) return prev; // Optimize: Do nothing if no Hanja
-
+      // 1. Update falling character positions safely using Refs
+      const currentFalling = fallingHanjaRef.current;
+      if (currentFalling.length > 0) {
         let reachedBottomCount = 0;
         const hitItems = [];
-        const updated = prev.map((item) => {
+        const updated = currentFalling.map((item) => {
           const nextY = item.y + item.speed;
           if (nextY >= 82) { // 82% is the bottom floor limit
             reachedBottomCount++;
@@ -180,57 +184,55 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
 
         const remaining = updated.filter((item) => !item.hitFloor);
 
-        // Safe Side-Effect Execution: Push out of the render phase
+        // Safe Side-Effect Execution: OUTSIDE state updater callbacks!
         if (hitItems.length > 0) {
-          setTimeout(() => {
-            // Record floor hit Hanja to wrong note
-            hitItems.forEach((item) => {
-              addWrongHanja({
-                id: item.id,
-                char: item.char,
-                meaning: item.meaning,
-                sound: item.sound,
-                fullMeaning: item.fullMeaning,
-                level: level
-              });
+          hitItems.forEach((item) => {
+            addWrongHanja({
+              id: item.id,
+              char: item.char,
+              meaning: item.meaning,
+              sound: item.sound,
+              fullMeaning: item.fullMeaning,
+              level: level
             });
+          });
 
-            setLives((prevLives) => {
-              const nextLives = prevLives - hitItems.length;
-              if (nextLives <= 0) {
-                setGameState('gameover');
-              }
-              return Math.max(0, nextLives);
-            });
-            setCombo(0);
-            playMissSound();
-          }, 0);
+          setLives((prevLives) => {
+            const nextLives = prevLives - hitItems.length;
+            if (nextLives <= 0) {
+              setGameState('gameover');
+            }
+            return Math.max(0, nextLives);
+          });
+          setCombo(0);
+          playMissSound();
         }
 
-        // Check if level cleared (win condition) - also pushed out of render phase safely
         if (remaining.length === 0 && spawnQueueRef.current.length === 0) {
-          setTimeout(() => {
-            setLives((currentLives) => {
-              if (currentLives > 0) setGameState('victory');
-              return currentLives;
-            });
-          }, 0);
+          setLives((currentLives) => {
+            if (currentLives > 0) setGameState('victory');
+            return currentLives;
+          });
         }
 
-        return remaining;
-      });
+        fallingHanjaRef.current = remaining;
+        setFallingHanja(remaining);
+      }
 
       // 2. Update particle positions
-      setParticles((prev) => {
-        if (prev.length === 0) return prev; // Optimize
-        return prev.map((p) => ({
+      const currentParticles = particlesRef.current;
+      if (currentParticles.length > 0) {
+        const nextParticles = currentParticles.map((p) => ({
           ...p,
           x: p.x + p.vx,
           y: p.y + p.vy,
           vy: p.vy + 0.15, // gravity
           alpha: p.alpha - 0.02
         })).filter((p) => p.alpha > 0);
-      });
+        
+        particlesRef.current = nextParticles;
+        setParticles(nextParticles);
+      }
 
       rAF = requestAnimationFrame(updateGame);
       animationFrameRef.current = rAF;
@@ -290,7 +292,9 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     setLives(3);
     setClearedCount(0);
     setFallingHanja([]);
+    fallingHanjaRef.current = [];
     setParticles([]);
+    particlesRef.current = [];
     setCombo(0);
     setMaxCombo(0);
     nextHanjaId.current = 0;
@@ -383,19 +387,16 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       speed: finalSpeed
     };
 
-    setFallingHanja((prev) => {
-      const nextFalling = [...prev, newFalling];
-      
-      // ⚠️ CRITICAL GUARDRAIL: DO NOT REMOVE OR CHANGE setTimeout(..., 0).
-      // - Updating setBottomCards (via ensureHanjaInBottomCards) synchronously inside the setFallingHanja callback
-      //   triggers a React 18 Concurrent Render deadlock / thread freeze, locking falling characters at Y=0.
-      setTimeout(() => {
-        const shouldShuffle = currentSpawnNum % 3 === 0;
-        ensureHanjaInBottomCards(nextFalling, shouldShuffle);
-      }, 0);
+    const nextFalling = [...fallingHanjaRef.current, newFalling];
+    fallingHanjaRef.current = nextFalling;
+    setFallingHanja(nextFalling);
 
-      return nextFalling;
-    });
+    // 💡 CRITICAL FIX: Separate side effect from the state updater callback.
+    // Doing setTimeout inside setFallingHanja((prev) => ...) triggers React 18 Concurrent deadlocks
+    // on desktop browsers (high refresh rates), freezing animations at Y=0.
+    // By passing only [newFalling] directly, we guarantee safe automatic batching.
+    const shouldShuffle = currentSpawnNum % 3 === 0;
+    ensureHanjaInBottomCards([newFalling], shouldShuffle);
   };
 
   const createExplosion = (xPercent, yPercent, color) => {
@@ -414,7 +415,9 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
         color: color || 'var(--color-primary)'
       });
     }
-    setParticles((prev) => [...prev, ...newParticles]);
+    const nextParticles = [...particlesRef.current, ...newParticles];
+    particlesRef.current = nextParticles;
+    setParticles(nextParticles);
   };
 
   const playMatchSound = () => {
@@ -476,15 +479,14 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       matchingItems.sort((a, b) => b.y - a.y);
       const target = matchingItems[0];
 
-      setFallingHanja((prev) => {
-        const remaining = prev.filter((item) => item.uid !== target.uid);
-        
-        // Check if level cleared safely outside render phase
-        if (spawnQueueRef.current.length === 0 && remaining.length === 0) {
-          setTimeout(() => setGameState('victory'), 0);
-        }
-        return remaining;
-      });
+      const remaining = fallingHanjaRef.current.filter((item) => item.uid !== target.uid);
+      fallingHanjaRef.current = remaining;
+      setFallingHanja(remaining);
+      
+      // Check if level cleared safely outside render phase
+      if (spawnQueueRef.current.length === 0 && remaining.length === 0) {
+        setGameState('victory');
+      }
 
       setClearedCount((prev) => prev + 1);
 
