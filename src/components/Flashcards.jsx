@@ -285,35 +285,80 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound, onSt
             플래쉬 카드 연습
           </h2>
           <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
-            가운데 시작 버튼을 누르면 한자의 음과 뜻을 자동으로 읽어주며 학습이 시작됩니다.<br/>
-            일시정지 버튼을 누르면 언제든지 자동 슬라이드를 멈출 수 있습니다.
+            한자의 뜻과 음을 자동으로 소리 내어 들려주는 <strong>학습하기</strong> 모드와,<br/>
+            한자만 먼저 보고 뜻과 음을 직접 맞추며 복습하는 <strong>한자 맞추기</strong> 모드 중 선택해 주세요.
           </p>
         </div>
         
-        <button 
-          onClick={() => {
-            if (typeof window !== 'undefined') {
-              unlockTtsAudio();
-            }
-            setLearningPhase('learn');
-            setCurrentIndex(0);
-          }}
-          className="theme-btn theme-btn-primary" 
-          style={{
-            fontSize: '1.3rem',
-            padding: '16px 40px',
-            borderRadius: '16px',
-            boxShadow: 'var(--shadow-md)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontWeight: 'bold'
-          }}
-        >
-          <Play size={22} fill="currentColor" /> 학습 시작하기
-        </button>
+        <div style={{
+          display: 'flex',
+          gap: '16px',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          width: '100%',
+          maxWidth: '550px',
+          margin: '0 auto'
+        }}>
+          {/* 학습하기 (듣고 보기) */}
+          <button 
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                unlockTtsAudio();
+              }
+              setLearningPhase('learn');
+              setCurrentIndex(0);
+            }}
+            className="theme-btn theme-btn-primary" 
+            style={{
+              flex: '1 1 200px',
+              fontSize: '1.15rem',
+              padding: '16px 24px',
+              borderRadius: '16px',
+              boxShadow: 'var(--shadow-md)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              fontWeight: 'bold'
+            }}
+          >
+            <Play size={20} fill="currentColor" /> 학습하기 (듣고 보기)
+          </button>
+
+          {/* 한자 맞추기 (테스트) */}
+          <button 
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                unlockTtsAudio();
+              }
+              setLearningPhase('review');
+              setCurrentIndex(0);
+              setShowAnswer(false);
+            }}
+            className="theme-btn" 
+            style={{
+              flex: '1 1 200px',
+              fontSize: '1.15rem',
+              padding: '16px 24px',
+              borderRadius: '16px',
+              border: '2px solid var(--color-primary)',
+              color: 'var(--color-primary)',
+              backgroundColor: '#ffffff',
+              boxShadow: 'var(--shadow-md)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              fontWeight: 'bold'
+            }}
+          >
+            <Award size={20} /> 한자 맞추기 (테스트)
+          </button>
+        </div>
 
         {/* TTS/Sound Toggle Button on Start Screen */}
         <div style={{ marginTop: '10px' }}>
