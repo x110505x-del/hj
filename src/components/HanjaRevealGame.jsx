@@ -246,7 +246,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
 
   return (
     <div style={{
-      maxWidth: '600px', margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px'
+      maxWidth: '800px', margin: '0 auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px'
     }}>
       {/* Header Info */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -300,7 +300,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
 
         {/* Hanja Display Container */}
         <div style={{
-          width: '240px', height: '240px', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center',
+          width: 'clamp(240px, 45vw, 380px)', height: 'clamp(240px, 45vw, 380px)', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center',
           backgroundColor: '#f8fafc', borderRadius: '16px', border: '2px dashed var(--color-border)', overflow: 'hidden'
         }}>
           
@@ -316,7 +316,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
 
           {/* Actual Hanja Character with Clip Path */}
           <div style={{
-            fontSize: '150px', fontWeight: 'bold', color: '#1e293b', fontFamily: '"AppleMyungjo", "Songti SC", "Songti TC", "Batang", serif',
+            fontSize: 'clamp(150px, 28vw, 240px)', fontWeight: 'bold', color: '#1e293b', fontFamily: '"AppleMyungjo", "Songti SC", "Songti TC", "Batang", serif',
             clipPath: clipPathStyle, transition: 'clip-path 0.5s ease-in-out', WebkitClipPath: clipPathStyle,
             lineHeight: 1, textShadow: '0px 4px 10px rgba(0,0,0,0.05)'
           }}>
@@ -355,7 +355,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               disabled={!!feedback}
               onClick={() => handleAnswer(opt)}
               style={{
-                padding: '12px 4px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
+                padding: 'clamp(12px, 2vw, 20px) 4px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
                 cursor: feedback ? 'default' : 'pointer', transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
                 display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '4px',
                 whiteSpace: 'nowrap', overflow: 'hidden'
@@ -363,8 +363,8 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               onMouseEnter={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.03)'; } }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.backgroundColor = '#ffffff'; }}
             >
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden' }}>{opt.meaning}</span>
-              <span style={{ color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 'bold' }}>{opt.sound}</span>
+              <span style={{ color: 'var(--color-text-muted)', fontSize: 'clamp(0.75rem, 1.5vw, 1rem)', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden' }}>{opt.meaning}</span>
+              <span style={{ color: 'var(--color-accent)', fontSize: 'clamp(0.9rem, 2vw, 1.3rem)', fontWeight: 'bold' }}>{opt.sound}</span>
             </button>
           ))}
         </div>
