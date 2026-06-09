@@ -346,9 +346,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
         </div>
 
         {/* Options Grid - Responsive: 6 items per row on PC, 3 on Mobile */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', width: '100%'
-        }}>
+        <div className="reveal-options-grid">
           {currentOptions.map((opt, idx) => (
             <button
               key={target.char + '-' + idx}
@@ -357,14 +355,14 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               style={{
                 padding: '12px 4px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
                 cursor: feedback ? 'default' : 'pointer', transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 overflow: 'hidden'
               }}
               onMouseEnter={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.03)'; } }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.backgroundColor = '#ffffff'; }}
             >
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>{opt.meaning}</span>
-              <span style={{ color: 'var(--color-accent)', fontSize: '1rem', fontWeight: 'bold' }}>{opt.sound}</span>
+              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{opt.meaning}</span>
+              <span style={{ color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 'bold' }}>{opt.sound}</span>
             </button>
           ))}
         </div>

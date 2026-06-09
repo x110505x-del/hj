@@ -670,5 +670,17 @@ body {
   display: none;
 }
 
+/* Reveal Game Options Grid */
+.reveal-options-grid {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  grid-template-columns: repeat(3, 1fr);
+}
 
+@media (min-width: 600px) {
+  .reveal-options-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
 
