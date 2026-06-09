@@ -5,6 +5,7 @@ let activeUtterances = [];
 const audioCache = new Map();
 let currentPlayingAudio = null;
 let pendingSpeakTimeout = null;
+let currentPlaySessionId = 0;
 
 if (typeof window !== 'undefined') {
   if ('speechSynthesis' in window) {
@@ -82,7 +83,8 @@ export const unlockTtsAudio = () => {
 const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
   if (typeof window === 'undefined') return;
   const cleanText = text.trim();
-  console.log(`TTS Fallback: Playing audio for "${cleanText}" (VoiceType: ${voiceType})`);
+  const sessionId = ++currentPlaySessionId;
+  console.log(`TTS Fallback: Playing audio for "${cleanText}" (VoiceType: ${voiceType}, Session: ${sessionId})`);
 
   // 1. Pause any currently playing audio
   if (currentPlayingAudio) {
@@ -137,6 +139,7 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
 
     // Attach callbacks
     activeAudio.onended = () => {
+      if (currentPlaySessionId !== sessionId) return;
       console.log(`TTS Fallback: Primary Audio ended for "${cleanText}"`);
       if (currentPlayingAudio === activeAudio) currentPlayingAudio = null;
       if (onEnd) onEnd();
@@ -171,6 +174,7 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
         } catch(e) {}
 
         secAudio.onended = () => {
+          if (currentPlaySessionId !== sessionId) return;
           console.log(`TTS Fallback: Secondary Audio ended for "${cleanText}"`);
           if (currentPlayingAudio === secAudio) currentPlayingAudio = null;
           if (onEnd) onEnd();
@@ -200,6 +204,10 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
     };
 
     activeAudio.play().then(() => {
+      if (currentPlaySessionId !== sessionId) {
+        activeAudio.pause();
+        return;
+      }
       console.log(`TTS Fallback: Playing primary Audio for "${cleanText}" successfully`);
     }).catch(e => {
       if (e.name === 'AbortError') {
@@ -233,12 +241,15 @@ export const speakKorean = (text, options = {}) => {
     useCloudTts = true // Prefer high-quality cloud neural voice for premium, natural pronunciation
   } = options;
 
+  // 0. 괄호와 괄호 속 한자/텍스트 완벽히 제거
+  const processedText = text.replace(/\([^)]*\)/g, '').trim();
+
   // 1. 슬래시(/)가 들어있는 특수 한자 처리 (예: "한국/나라, 한")
-  let finalSpeechText = text;
-  let hasSlash = text.includes('/');
+  let finalSpeechText = processedText;
+  let hasSlash = processedText.includes('/');
   
   if (hasSlash) {
-    const parts = text.split(',');
+    const parts = processedText.split(',');
     if (parts.length >= 2) {
       const meaningPart = parts[0].trim(); // "한국/나라"
       const soundPart = parts[1].trim();   // "한"
@@ -448,6 +459,8 @@ export const speakKorean = (text, options = {}) => {
 };
 
 export const cancelSpeech = () => {
+  currentPlaySessionId++; // 만료 처리 (비동기 오디오 프로미스 컷오프)
+  
   if (pendingSpeakTimeout) {
     clearTimeout(pendingSpeakTimeout);
     pendingSpeakTimeout = null;
