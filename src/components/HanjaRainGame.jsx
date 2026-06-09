@@ -148,7 +148,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     };
   }, [level, hasStarted]);
 
-  const lastSpawnTimeRef = useRef(0);
+  const lastSpawnTimeRef = useRef(null);
 
   // Main game loop (using requestAnimationFrame for smooth falling)
   useEffect(() => {
@@ -169,9 +169,9 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       animationFrameRef.lastRender = timestamp;
 
       // Synchronized Spawn Logic:
-      // By tying spawning strictly to the animation frame loop, we perfectly evade 
-      // PC browser background throttling desync bugs. If rAF stops, spawning stops.
-      if (!lastSpawnTimeRef.current) lastSpawnTimeRef.current = timestamp;
+      // Prevent Edge browser bug where timestamp can be 0 on first frame
+      if (lastSpawnTimeRef.current === null) lastSpawnTimeRef.current = timestamp;
+      
       const deltaTime = timestamp - lastSpawnTimeRef.current;
       
       if (deltaTime >= 4000) { // Spawn slower (every 4 seconds) to make it easier for kids
