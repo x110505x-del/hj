@@ -21,12 +21,8 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
   const [currentOptions, setCurrentOptions] = useState([]);
   
   const [revealLevel, setRevealLevel] = useState(1); // 1 to 4
-  const [timeLeft, setTimeLeft] = useState(4); // 4 seconds per reveal level
   const [feedback, setFeedback] = useState(null);
 
-  const timerRef = useRef(null);
-
-  const REVEAL_PHASE_SECONDS = 4;
   const TOTAL_QUESTIONS = 50;
 
   // Sound effects
@@ -83,7 +79,6 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
 
   const setupQuestion = (queue, index, fullDb) => {
     setRevealLevel(1);
-    setTimeLeft(REVEAL_PHASE_SECONDS);
     setFeedback(null);
     
     const target = queue[index];
@@ -94,40 +89,14 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
     setCurrentOptions(options);
   };
 
-  useEffect(() => {
-    if (gameState === 'playing' && !feedback) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            // Time is up for this phase
-            if (revealLevel < 4) {
-              setRevealLevel(lvl => lvl + 1);
-              return REVEAL_PHASE_SECONDS;
-            } else {
-              // Level 4 time expired -> Wrong answer
-              handleTimeOut();
-              return 0;
-            }
-          }
-          return prev - 1;
-        });
-      }, 1000);
+  const handleNextPhase = () => {
+    if (revealLevel < 4) {
+      setRevealLevel(lvl => lvl + 1);
     }
-    
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [gameState, revealLevel, feedback]);
-
-  const handleTimeOut = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    playSound('wrong');
-    showFeedbackAndNext('wrong', 0);
   };
 
   const handleAnswer = (option) => {
     if (feedback || gameState !== 'playing') return;
-    if (timerRef.current) clearInterval(timerRef.current);
     
     const target = quizQueue[currentIndex];
     if (option.char === target.char) {
@@ -221,7 +190,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
         </h2>
         <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
           한자가 처음에는 아랫부분만 살짝 보입니다.<br/>
-          시간이 지날수록 조금씩 가려진 부분이 위로 올라가며 정체를 드러냅니다.<br/>
+          <strong>다음 단계 보기</strong> 버튼을 누르면 가려진 부분이 조금씩 위로 올라갑니다.<br/>
           <strong>최대한 가려진 상태(1단계)에서 정답을 맞출수록 아주 높은 점수를 받습니다!</strong>
         </p>
 
@@ -271,8 +240,11 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
     }}>
       {/* Header Info */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onBack} className="theme-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.85rem' }}>
-          <ArrowLeft size={14}/> 종료
+        <button onClick={onBack} className="theme-btn" style={{ 
+          display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '1rem', fontWeight: 'bold',
+          backgroundColor: '#ef4444', color: 'white', border: 'none'
+        }}>
+          <ArrowLeft size={18}/> 나가기
         </button>
         
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -292,18 +264,28 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
         boxShadow: 'var(--shadow-md)', position: 'relative'
       }}>
         
-        {/* Reveal Phase & Timer Status */}
+        {/* Reveal Phase & Next Step Status */}
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
           <div style={{
-            backgroundColor: '#f1f5f9', color: 'var(--color-primary)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold'
+            backgroundColor: '#f1f5f9', color: 'var(--color-primary)', padding: '6px 14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 'bold'
           }}>
             시야 {revealLevel}단계
           </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '4px', color: timeLeft <= 1 ? '#ef4444' : 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: 'bold'
-          }}>
-            <Clock size={16}/> {timeLeft}초
-          </div>
+          
+          <button 
+            onClick={handleNextPhase}
+            disabled={revealLevel >= 4 || feedback}
+            style={{
+              padding: '6px 14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 'bold',
+              backgroundColor: revealLevel >= 4 || feedback ? '#f1f5f9' : 'var(--color-accent)', 
+              color: revealLevel >= 4 || feedback ? '#94a3b8' : '#ffffff',
+              border: 'none', cursor: revealLevel >= 4 || feedback ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s',
+              display: 'flex', alignItems: 'center', gap: '6px'
+            }}
+          >
+            👀 다음 단계 보기
+          </button>
         </div>
 
         {/* Hanja Display Container */}
@@ -346,16 +328,16 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               ) : (
                 <>
                   <div style={{ fontSize: '4rem', color: '#ef4444', animation: 'shake 0.4s' }}>❌</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#ef4444', marginTop: '8px' }}>오답 / 시간초과</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#ef4444', marginTop: '8px' }}>오답</div>
                 </>
               )}
             </div>
           )}
         </div>
 
-        {/* Options Grid */}
+        {/* Options Grid - Compact Size to prevent scrolling */}
         <div style={{
-          display: 'grid', gridTemplateColumns: '1fr', gap: '8px', width: '100%'
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%'
         }}>
           {currentOptions.map((opt, idx) => (
             <button
@@ -363,8 +345,9 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               disabled={!!feedback}
               onClick={() => handleAnswer(opt)}
               style={{
-                padding: '16px', borderRadius: '12px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
-                fontSize: '1.05rem', fontWeight: 'bold', color: '#1f2937', cursor: feedback ? 'default' : 'pointer',
+                gridColumn: idx === 4 ? '1 / -1' : 'auto', // make 5th option span full width
+                padding: '10px 12px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
+                fontSize: '0.95rem', fontWeight: 'bold', color: '#1f2937', cursor: feedback ? 'default' : 'pointer',
                 transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'center'
               }}
               onMouseEnter={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.03)'; } }}

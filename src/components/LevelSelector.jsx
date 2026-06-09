@@ -497,6 +497,57 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
             </span>
           </div>
         </div>
+        {/* Mode 3: Reveal Game */}
+        <div 
+          onClick={() => handleModeStart('reveal_game')}
+          className="study-mode-card"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '20px',
+            backgroundColor: '#ffffff',
+            border: '2px solid var(--color-border)',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            cursor: 'pointer',
+            textAlign: 'left',
+            transition: 'all 0.2s',
+            boxShadow: 'var(--shadow-sm)',
+            height: '110px',
+            boxSizing: 'border-box'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-primary)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-border)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <div style={{
+            width: '50px',
+            height: '50px',
+            borderRadius: '12px',
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            color: 'var(--color-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <Eye size={26} />
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: '#1f2937', fontWeight: 'bold' }}>
+              가려진 한자 맞추기
+            </h3>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+              가려진 한자가 조금씩 위로 드러납니다. 최대한 일찍 정답을 맞춰 높은 점수를 획득하세요!
+            </span>
+          </div>
+        </div>
+
 
         {/* Mode 3: Rain Game */}
         <div 
@@ -596,57 +647,6 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
             </h3>
             <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
               테두리만 있는 한자에 보이지 않는 붓이 지나가며 획순 순서대로 써지는 모습을 관찰합니다.
-            </span>
-          </div>
-        </div>
-
-        {/* Mode 5: Reveal Game */}
-        <div 
-          onClick={() => handleModeStart('reveal_game')}
-          className="study-mode-card"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '20px',
-            backgroundColor: '#ffffff',
-            border: '2px solid var(--color-border)',
-            borderRadius: '16px',
-            padding: '16px 20px',
-            cursor: 'pointer',
-            textAlign: 'left',
-            transition: 'all 0.2s',
-            boxShadow: 'var(--shadow-sm)',
-            height: '110px',
-            boxSizing: 'border-box'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-primary)';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-border)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          <div style={{
-            width: '50px',
-            height: '50px',
-            borderRadius: '12px',
-            backgroundColor: 'rgba(16, 185, 129, 0.08)',
-            color: 'var(--color-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <Eye size={26} />
-          </div>
-          <div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: '#1f2937', fontWeight: 'bold' }}>
-              가려진 한자 맞추기
-            </h3>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              가려진 한자가 조금씩 위로 드러납니다. 최대한 일찍 정답을 맞춰 높은 점수를 획득하세요!
             </span>
           </div>
         </div>
