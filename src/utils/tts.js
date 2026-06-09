@@ -80,11 +80,13 @@ export const unlockTtsAudio = () => {
   }
 };
 
-const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
+const playFallbackAudio = (text, rate, voiceType, onEnd, onError, repeatTwice = false) => {
   if (typeof window === 'undefined') return;
   const cleanText = text.trim();
   const sessionId = ++currentPlaySessionId;
-  console.log(`TTS Fallback: Playing audio for "${cleanText}" (VoiceType: ${voiceType}, Session: ${sessionId})`);
+  let playCount = 0;
+  const maxPlays = repeatTwice ? 2 : 1;
+  console.log(`TTS Fallback: Playing audio for "${cleanText}" (VoiceType: ${voiceType}, Session: ${sessionId}, Repeats: ${maxPlays})`);
 
   // 1. Pause any currently playing audio
   if (currentPlayingAudio) {
@@ -140,6 +142,13 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
     // Attach callbacks
     activeAudio.onended = () => {
       if (currentPlaySessionId !== sessionId) return;
+      playCount++;
+      if (playCount < maxPlays) {
+        console.log(`TTS Fallback: Replaying primary Audio for "${cleanText}" (${playCount}/${maxPlays})`);
+        activeAudio.currentTime = 0;
+        activeAudio.play().catch(e => console.warn("TTS Replay error:", e));
+        return;
+      }
       console.log(`TTS Fallback: Primary Audio ended for "${cleanText}"`);
       if (currentPlayingAudio === activeAudio) currentPlayingAudio = null;
       if (onEnd) onEnd();
@@ -175,6 +184,13 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError) => {
 
         secAudio.onended = () => {
           if (currentPlaySessionId !== sessionId) return;
+          playCount++;
+          if (playCount < maxPlays) {
+            console.log(`TTS Fallback: Replaying secondary Audio for "${cleanText}" (${playCount}/${maxPlays})`);
+            secAudio.currentTime = 0;
+            secAudio.play().catch(e => console.warn("TTS Replay error:", e));
+            return;
+          }
           console.log(`TTS Fallback: Secondary Audio ended for "${cleanText}"`);
           if (currentPlayingAudio === secAudio) currentPlayingAudio = null;
           if (onEnd) onEnd();
@@ -267,11 +283,9 @@ export const speakKorean = (text, options = {}) => {
   }
 
   // 2. repeatTwice 처리
-  // 슬래시가 있는 경우 이미 각 뜻을 분리해서 읽었으므로(예: "한국 한, 나라 한"), repeatTwice를 무시하고 1회만 재생합니다.
-  if (repeatTwice && !hasSlash) {
-    const cleaned = finalSpeechText.replace(/[.,]/g, '').trim();
-    finalSpeechText = `${cleaned}, ${cleaned}.`;
-  }
+  // 텍스트를 "A, A."로 문자열 병합하면 구글 TTS 엔진 억양이 깨지거나 버그("쌀 미 쌀 미 쌀")가 발생하므로,
+  // 텍스트 조작 없이 순수한 단일 오디오 객체를 2번 반복 재생(loop)하도록 플래그만 추출합니다.
+  const shouldRepeatAudio = repeatTwice && !hasSlash;
 
   console.log("TTS: Attempting to speak:", finalSpeechText, "using VoiceType:", voiceType);
 
@@ -407,8 +421,17 @@ export const speakKorean = (text, options = {}) => {
         console.log(`TTS Local: Speech started: "${finalSpeechText}"`);
       };
 
+      let localPlayCount = 0;
+      const maxLocalPlays = shouldRepeatAudio ? 2 : 1;
+
       utterance.onend = () => {
-        console.log("TTS Local: Utterance onEnd fired");
+        console.log(`TTS Local: Speech ended: "${finalSpeechText}"`);
+        localPlayCount++;
+        if (localPlayCount < maxLocalPlays) {
+          console.log(`TTS Local: Replaying speech (${localPlayCount}/${maxLocalPlays})`);
+          window.speechSynthesis.speak(utterance);
+          return;
+        }
         cleanup();
         if (onEnd) onEnd();
       };
@@ -448,7 +471,7 @@ export const speakKorean = (text, options = {}) => {
     playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, (err) => {
       console.warn("TTS: Google Translate TTS failed. Falling back to local SpeechSynthesis:", err);
       runLocalSpeechSynthesis();
-    });
+    }, shouldRepeatAudio);
   };
 
   if (skipCancel) {
