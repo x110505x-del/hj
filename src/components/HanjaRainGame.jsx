@@ -406,9 +406,9 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     // 💡 CRITICAL FIX: Separate side effect from the state updater callback.
     // Doing setTimeout inside setFallingHanja((prev) => ...) triggers React 18 Concurrent deadlocks
     // on desktop browsers (high refresh rates), freezing animations at Y=0.
-    // By passing only [newFalling] directly, we guarantee safe automatic batching.
+    // We pass nextFalling (all currently falling items) to ensure their answer cards are not deleted!
     const shouldShuffle = currentSpawnNum % 3 === 0;
-    ensureHanjaInBottomCards([newFalling], shouldShuffle);
+    ensureHanjaInBottomCards(nextFalling, shouldShuffle);
   };
 
   const createExplosion = (xPercent, yPercent, color) => {
