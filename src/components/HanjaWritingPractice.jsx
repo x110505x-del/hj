@@ -741,24 +741,7 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
             </div>
           )}
 
-          {/* Indicator */}
-          <div style={{
-            position: 'absolute',
-            top: '8px',
-            right: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            background: 'rgba(255, 255, 255, 0.9)',
-            padding: '3px 8px',
-            borderRadius: '12px',
-            fontSize: '0.7rem',
-            color: strokeData ? 'var(--color-primary)' : 'var(--color-text-muted)',
-            border: '1px solid #e2e8f0',
-            fontWeight: 'bold'
-          }}>
-            <Eye size={10} /> {strokeData ? '획순 벡터 애니메이션' : '서체 시뮬레이션'}
-          </div>
+
         </div>
 
         {/* Meaning & Sound Display Below Canvas */}
