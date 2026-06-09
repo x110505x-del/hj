@@ -25,29 +25,16 @@ const getFallbackAudioUrls = (text) => {
   return { primary, secondary };
 };
 
-// Preload function for fallback Audio
+// Preload function for fallback Audio urls
 export const preloadKoreanSpeech = (text) => {
   if (typeof window === 'undefined') return;
   const cleanText = text.trim();
   if (!cleanText || audioCache.has(cleanText)) return;
 
   try {
-    console.log(`TTS: Preloading audio for text: "${cleanText}"`);
+    console.log(`TTS: Preloading urls for text: "${cleanText}"`);
     const { primary, secondary } = getFallbackAudioUrls(cleanText);
-
-    // Preload primary Google TTS
-    const primaryAudio = new Audio();
-    primaryAudio.src = primary;
-    primaryAudio.preload = 'auto';
-    primaryAudio.load();
-
-    // Preload secondary Youdao TTS
-    const secondaryAudio = new Audio();
-    secondaryAudio.src = secondary;
-    secondaryAudio.preload = 'auto';
-    secondaryAudio.load();
-
-    audioCache.set(cleanText, { primary: primaryAudio, secondary: secondaryAudio });
+    audioCache.set(cleanText, { primary, secondary });
   } catch (err) {
     console.error(`TTS Cache: Preload failed for "${cleanText}":`, err);
   }
@@ -87,167 +74,126 @@ const playFallbackAudio = (text, rate, voiceType, onEnd, onError, repeatTwice = 
   const sessionId = ++currentPlaySessionId;
   let playCount = 0;
   const maxPlays = repeatTwice ? 2 : 1;
-  console.log(`TTS Fallback: Playing audio for "${cleanText}" (VoiceType: ${voiceType}, Session: ${sessionId}, Repeats: ${maxPlays})`);
+  console.log(`TTS Fallback: Playing fresh audio for "${cleanText}" (VoiceType: ${voiceType}, Session: ${sessionId}, Repeats: ${maxPlays})`);
 
-  // 1. Pause any currently playing audio
+  // 1. Stop any currently playing audio
   if (currentPlayingAudio) {
     try {
+      currentPlayingAudio.onended = null;
+      currentPlayingAudio.onerror = null;
       currentPlayingAudio.pause();
-      currentPlayingAudio.currentTime = 0;
     } catch (e) {
       console.warn("TTS Fallback: Error pausing active audio:", e);
     }
     currentPlayingAudio = null;
   }
 
-  // 2. Fetch from cache or create on the fly
-  let cached = audioCache.get(cleanText);
-  if (!cached) {
-    console.log(`TTS Fallback: Cache miss for "${cleanText}". Creating audio on the fly.`);
+  // 2. Fetch URLs from cache or create on the fly
+  let cachedUrls = audioCache.get(cleanText);
+  if (!cachedUrls) {
+    console.log(`TTS Fallback: Cache miss for "${cleanText}". Generating URLs.`);
     try {
       const { primary, secondary } = getFallbackAudioUrls(cleanText);
-      const primaryAudio = new Audio(primary);
-      primaryAudio.preload = 'auto';
-      const secondaryAudio = new Audio(secondary);
-      secondaryAudio.preload = 'auto';
-      cached = { primary: primaryAudio, secondary: secondaryAudio };
-      audioCache.set(cleanText, cached);
+      cachedUrls = { primary, secondary };
+      audioCache.set(cleanText, cachedUrls);
     } catch (err) {
-      console.error("TTS Fallback: Audio creation crashed:", err);
+      console.error("TTS Fallback: URL generation failed:", err);
       if (onError) onError(err);
       return;
     }
   }
 
-  const activeAudio = cached.primary;
+  // 3. Always instantiate a FRESH Audio object to avoid event listener contamination
+  let activeAudio = null;
+  try {
+    activeAudio = new Audio(cachedUrls.primary);
+    activeAudio.preload = 'auto';
+  } catch (err) {
+    console.error("TTS Fallback: Fresh Audio creation failed:", err);
+    if (onError) onError(err);
+    return;
+  }
+
   currentPlayingAudio = activeAudio;
 
-  try {
-    // Configure pitch shifting or speed changes based on voiceType safely
+  const startPlayback = (audioObj, isSecondary = false) => {
     try {
-      if (voiceType === 'child') {
-        if ('preservesPitch' in activeAudio) activeAudio.preservesPitch = false;
-        if ('webkitPreservesPitch' in activeAudio) activeAudio.webkitPreservesPitch = false;
-        activeAudio.playbackRate = 1.35;
-      } else if (voiceType === 'male') {
-        if ('preservesPitch' in activeAudio) activeAudio.preservesPitch = false;
-        if ('webkitPreservesPitch' in activeAudio) activeAudio.webkitPreservesPitch = false;
-        activeAudio.playbackRate = 0.82;
-      } else {
-        if ('preservesPitch' in activeAudio) activeAudio.preservesPitch = true;
-        if ('webkitPreservesPitch' in activeAudio) activeAudio.webkitPreservesPitch = true;
-        activeAudio.playbackRate = rate;
-      }
-    } catch(e) { console.warn('Safari Pitch attribute error:', e); }
-
-    // Attach callbacks
-    activeAudio.onended = () => {
-      if (currentPlaySessionId !== sessionId) return;
-      if (activeAudio._isEnding) return; // Safari debounce guard
-      activeAudio._isEnding = true;
-      setTimeout(() => { activeAudio._isEnding = false; }, 300);
-      playCount++;
-      if (playCount < maxPlays) {
-        console.log(`TTS Fallback: Replaying primary Audio for "${cleanText}" (${playCount}/${maxPlays})`);
-        activeAudio.currentTime = 0;
-        activeAudio.play().catch(e => console.warn("TTS Replay error:", e));
-        return;
-      }
-      console.log(`TTS Fallback: Primary Audio ended for "${cleanText}"`);
-      if (currentPlayingAudio === activeAudio) currentPlayingAudio = null;
-      if (onEnd) onEnd();
-    };
-
-    activeAudio.onerror = (e) => {
-      const errorMsg = activeAudio.error 
-        ? `Code ${activeAudio.error.code}; Message: ${activeAudio.error.message}` 
-        : 'Unknown audio element error';
-      console.error(`TTS Fallback Error: Primary audio failed to load/play for "${cleanText}". Error: ${errorMsg}`, e);
-
-      // Try secondary voice fallback (Youdao)
+      // Configure pitch/rate
       try {
-        console.log(`TTS Fallback: Trying secondary fallback voice for "${cleanText}"...`);
-        const secAudio = cached.secondary;
-        currentPlayingAudio = secAudio;
+        if (voiceType === 'child') {
+          if ('preservesPitch' in audioObj) audioObj.preservesPitch = false;
+          if ('webkitPreservesPitch' in audioObj) audioObj.webkitPreservesPitch = false;
+          audioObj.playbackRate = 1.35;
+        } else if (voiceType === 'male') {
+          if ('preservesPitch' in audioObj) audioObj.preservesPitch = false;
+          if ('webkitPreservesPitch' in audioObj) audioObj.webkitPreservesPitch = false;
+          audioObj.playbackRate = 0.82;
+        } else {
+          if ('preservesPitch' in audioObj) audioObj.preservesPitch = true;
+          if ('webkitPreservesPitch' in audioObj) audioObj.webkitPreservesPitch = true;
+          audioObj.playbackRate = rate;
+        }
+      } catch(e) {}
+
+      audioObj.onended = () => {
+        if (currentPlaySessionId !== sessionId) {
+          audioObj.onended = null;
+          audioObj.onerror = null;
+          return;
+        }
+        playCount++;
+        if (playCount < maxPlays) {
+          console.log(`TTS Fallback: Replaying fresh Audio (${playCount}/${maxPlays})`);
+          audioObj.currentTime = 0;
+          audioObj.play().catch(e => console.warn("TTS Replay error:", e));
+          return;
+        }
+        console.log(`TTS Fallback: Audio sequence finished.`);
+        audioObj.onended = null;
+        audioObj.onerror = null;
+        if (currentPlayingAudio === audioObj) currentPlayingAudio = null;
+        if (onEnd) onEnd();
+      };
+
+      audioObj.onerror = (e) => {
+        if (currentPlaySessionId !== sessionId) return;
+        audioObj.onended = null;
+        audioObj.onerror = null;
         
-        try {
-          if (voiceType === 'child') {
-            if ('preservesPitch' in secAudio) secAudio.preservesPitch = false;
-            if ('webkitPreservesPitch' in secAudio) secAudio.webkitPreservesPitch = false;
-            secAudio.playbackRate = 1.35;
-          } else if (voiceType === 'male') {
-            if ('preservesPitch' in secAudio) secAudio.preservesPitch = false;
-            if ('webkitPreservesPitch' in secAudio) secAudio.webkitPreservesPitch = false;
-            secAudio.playbackRate = 0.82;
-          } else {
-            if ('preservesPitch' in secAudio) secAudio.preservesPitch = true;
-            if ('webkitPreservesPitch' in secAudio) secAudio.webkitPreservesPitch = true;
-            secAudio.playbackRate = rate;
+        if (!isSecondary) {
+          console.log(`TTS Fallback: Primary failed. Trying fresh secondary audio.`);
+          try {
+            const secAudio = new Audio(cachedUrls.secondary);
+            secAudio.preload = 'auto';
+            currentPlayingAudio = secAudio;
+            startPlayback(secAudio, true);
+          } catch (secErr) {
+            console.error("Secondary initialization failed:", secErr);
+            if (onError) onError(secErr);
           }
-        } catch(e) {}
+        } else {
+          console.error("Both primary and secondary audios failed.");
+          if (onError) onError(e);
+        }
+      };
 
-        secAudio.onended = () => {
-          if (currentPlaySessionId !== sessionId) return;
-          if (secAudio._isEnding) return;
-          secAudio._isEnding = true;
-          setTimeout(() => { secAudio._isEnding = false; }, 300);
-          playCount++;
-          if (playCount < maxPlays) {
-            console.log(`TTS Fallback: Replaying secondary Audio for "${cleanText}" (${playCount}/${maxPlays})`);
-            secAudio.currentTime = 0;
-            secAudio.play().catch(e => console.warn("TTS Replay error:", e));
-            return;
-          }
-          console.log(`TTS Fallback: Secondary Audio ended for "${cleanText}"`);
-          if (currentPlayingAudio === secAudio) currentPlayingAudio = null;
-          if (onEnd) onEnd();
-        };
+      audioObj.play().then(() => {
+        if (currentPlaySessionId !== sessionId) {
+          audioObj.pause();
+          audioObj.onended = null;
+          audioObj.onerror = null;
+        }
+      }).catch(errPlay => {
+        if (errPlay.name === 'AbortError') return;
+        if (audioObj.onerror) audioObj.onerror(errPlay);
+      });
 
-        secAudio.onerror = (err2) => {
-          const secErrorMsg = secAudio.error 
-            ? `Code ${secAudio.error.code}; Message: ${secAudio.error.message}` 
-            : 'Unknown audio element error';
-          console.error(`TTS Fallback Error: Both primary and secondary voice audio failed for "${cleanText}". Secondary error: ${secErrorMsg}`, err2);
-          if (currentPlayingAudio === secAudio) currentPlayingAudio = null;
-          if (onError) onError(err2);
-        };
+    } catch (err) {
+      if (onError) onError(err);
+    }
+  };
 
-        secAudio.play().catch(errPlay => {
-          if (errPlay.name === 'AbortError') {
-            console.log("TTS Fallback: Secondary play aborted (new audio started).");
-            return;
-          }
-          console.error(`TTS Fallback Error: Secondary audio play() promise rejected for "${cleanText}":`, errPlay);
-          if (onError) onError(errPlay);
-        });
-      } catch (errSecondary) {
-        console.error(`TTS Fallback Error: Secondary setup failed for "${cleanText}":`, errSecondary);
-        if (onError) onError(errSecondary);
-      }
-    };
-
-    activeAudio.play().then(() => {
-      if (currentPlaySessionId !== sessionId) {
-        activeAudio.pause();
-        return;
-      }
-      console.log(`TTS Fallback: Playing primary Audio for "${cleanText}" successfully`);
-    }).catch(e => {
-      if (e.name === 'AbortError') {
-        console.log("TTS Fallback: Primary play aborted (new audio started).");
-        return;
-      }
-      console.error(`TTS Fallback Error: Primary audio play() promise rejected for "${cleanText}":`, e);
-      // Trigger error fallback path manually
-      if (activeAudio.onerror) {
-        activeAudio.onerror(e);
-      }
-    });
-
-  } catch (err) {
-    console.error(`TTS Fallback Error: Playback execution crashed for "${cleanText}":`, err);
-    if (onError) onError(err);
-  }
+  startPlayback(activeAudio, false);
 };
 
 export const speakKorean = (text, options = {}) => {
@@ -507,6 +453,8 @@ export const cancelSpeech = () => {
     activeUtterances = [];
     if (currentPlayingAudio) {
       try {
+        currentPlayingAudio.onended = null;
+        currentPlayingAudio.onerror = null;
         currentPlayingAudio.pause();
         currentPlayingAudio.currentTime = 0;
       } catch (e) {
