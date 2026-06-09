@@ -19,33 +19,13 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
   const [clearedCount, setClearedCount] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
 
-  const [isPaused, setIsPaused] = useState(false);
-  const isPausedRef = useRef(false);
   const scoreRef = useRef(0);
-
-  useEffect(() => {
-    isPausedRef.current = isPaused;
-  }, [isPaused]);
 
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
-
-  // Handle visibility API to auto-pause when tab goes out of focus
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'hidden') {
-        setIsPaused(true);
-      } else {
-        setIsPaused(false);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, []);
   
+
   const shuffleTimerRef = useRef(null);
   const [cols, setCols] = useState(typeof window !== 'undefined' && window.innerWidth <= 768 ? 3 : 5);
 
@@ -167,7 +147,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
 
   // Main game loop (using requestAnimationFrame for smooth falling)
   useEffect(() => {
-    if (gameState !== 'playing' || isPaused) return;
+    if (gameState !== 'playing') return;
 
     let rAF;
     const updateGame = (timestamp) => {
@@ -264,7 +244,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
         cancelAnimationFrame(rAF);
       }
     };
-  }, [gameState, soundOn, isPaused, hasStarted]);
+  }, [gameState, soundOn, hasStarted]);
 
 
 
@@ -315,10 +295,6 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     setMaxCombo(0);
     nextHanjaId.current = 0;
     
-    // Force unlock any background visibility throttle state on PC desktop
-    setIsPaused(false);
-    isPausedRef.current = false;
-
     // Reset baseline spawn timer for requestAnimationFrame synchronisation
     lastSpawnTimeRef.current = performance.now();
 
