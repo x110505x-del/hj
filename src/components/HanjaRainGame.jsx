@@ -175,8 +175,10 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       const deltaTime = timestamp - lastSpawnTimeRef.current;
       
       if (deltaTime >= 4000) { // Spawn slower (every 4 seconds) to make it easier for kids
-        spawnHanja();
-        lastSpawnTimeRef.current = timestamp;
+        if (fallingHanjaRef.current.length < 5) {
+          spawnHanja();
+          lastSpawnTimeRef.current = timestamp;
+        }
       }
 
       // 1. Update falling character positions safely using Refs
