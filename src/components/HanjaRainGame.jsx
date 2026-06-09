@@ -9,7 +9,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
   
   const [gameState, setGameState] = useState('ready'); // 'ready' | 'playing' | 'gameover' | 'victory'
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
+  const [lives, setLives] = useState(5); // Increased from 3 to 5
   const [fallingHanja, setFallingHanja] = useState([]);
   const fallingHanjaRef = useRef([]);
 
@@ -174,7 +174,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       if (!lastSpawnTimeRef.current) lastSpawnTimeRef.current = timestamp;
       const deltaTime = timestamp - lastSpawnTimeRef.current;
       
-      if (deltaTime >= 3000) {
+      if (deltaTime >= 4000) { // Spawn slower (every 4 seconds) to make it easier for kids
         spawnHanja();
         lastSpawnTimeRef.current = timestamp;
       }
@@ -186,7 +186,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
         const hitItems = [];
         const updated = currentFalling.map((item) => {
           const nextY = item.y + item.speed;
-          if (nextY >= 85) { // 85% allows the character to fully cross the red dashed line (82%) before registering a miss
+          if (nextY >= 89) { // Increased to 89% so the Hanja visually crosses the red line completely before a miss triggers
             reachedBottomCount++;
             hitItems.push({ ...item, y: nextY, hitFloor: true });
             return { ...item, y: nextY, hitFloor: true };
@@ -301,7 +301,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
 
     setGameState('playing');
     setScore(0);
-    setLives(3);
+    setLives(5); // Reset to 5 lives
     setClearedCount(0);
     setFallingHanja([]);
     fallingHanjaRef.current = [];
@@ -376,14 +376,14 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     const randomCard = spawnQueueRef.current.shift();
     const randomX = 10 + Math.random() * 75;
     
-    // Base speed, made more varied (0.05 to 0.16)
-    const baseSpeed = 0.05 + Math.random() * 0.11;
-    const speedMultiplier = 1 + (scoreRef.current / 250);
-    let finalSpeed = Math.min(1.2, baseSpeed * speedMultiplier);
+    // Gentler base speed for kids (0.02 to 0.07)
+    const baseSpeed = 0.02 + Math.random() * 0.05;
+    const speedMultiplier = 1 + (scoreRef.current / 600); // Slower speed ramp-up
+    let finalSpeed = Math.min(0.5, baseSpeed * speedMultiplier); // Capped at 0.5 to prevent super-fast falls
 
     // 한일(一), 두이(二), 석삼(三) 은 매우 쉬우므로 속도를 2배 빠르게 적용
     if (randomCard.char === '一' || randomCard.char === '二' || randomCard.char === '三') {
-      finalSpeed *= 2.0;
+      finalSpeed *= 1.5; // Moderated speed boost from 2.0x to 1.5x
     }
 
     const currentSpawnNum = nextHanjaId.current + 1;
@@ -671,12 +671,12 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
           gap: cols === 3 ? '8px' : '16px',
           height: '30px'
         }}>
-          {/* Hearts Display */}
+          {/* Hearts Display - Render 5 hearts instead of 3 */}
           <div style={{ display: 'flex', gap: cols === 3 ? '2px' : '4px', alignItems: 'center' }}>
-            {[...Array(3)].map((_, i) => (
+            {[...Array(5)].map((_, i) => (
               <Heart 
                 key={i} 
-                size={cols === 3 ? 15 : 20} 
+                size={cols === 3 ? 14 : 18} 
                 fill={i < lives ? '#ef4444' : 'none'} 
                 color={i < lives ? '#ef4444' : '#d1d5db'} 
                 style={{ transition: 'transform 0.2s' }}
@@ -750,7 +750,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
 
             {/* Falling Hanja Elements */}
             {fallingHanja.map((item) => {
-              const isNearBottom = item.y >= 55;
+              const isNearBottom = item.y >= 68; // Start warning blink lower down (at 68%) instead of 55%
               return (
                 <div
                   key={item.uid}
