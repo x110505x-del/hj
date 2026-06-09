@@ -120,34 +120,84 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
   useEffect(() => {
     if (!currentHanja) return;
     
-    setIsLoadingStrokes(true);
-    setStrokeData(null);
-    
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
-    strokeProgressRef.current = 0;
-    currentStrokeIndexRef.current = 0;
-    isCompletedPauseRef.current = false;
-    
-    const char = currentHanja.char;
-    // jsDelivr CDN provides traditional Chinese characters metadata of Hanzi Writer
-    const url = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2/${encodeURIComponent(char)}.json`;
-    
-    fetch(url)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load stroke data');
-        return res.json();
-      })
-      .then((data) => {
+    const fetchStrokeData = async (character) => {
+      const url1 = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2/${encodeURIComponent(character)}.json`;
+      const url2 = `https://cdn.jsdelivr.net/npm/hanzi-writer-data-traditional@1.0/${encodeURIComponent(character)}.json`;
+      
+      try {
+        const res = await fetch(url1);
+        if (res.ok) return await res.json();
+      } catch(e) {}
+      
+      try {
+        const res = await fetch(url2);
+        if (res.ok) return await res.json();
+      } catch(e) {}
+      
+      throw new Error('Not found in both repositories');
+    };
+
+    const loadStrokes = async () => {
+      setIsLoadingStrokes(true);
+      setStrokeData(null);
+      
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+      strokeProgressRef.current = 0;
+      currentStrokeIndexRef.current = 0;
+      isCompletedPauseRef.current = false;
+      
+      const char = currentHanja.char;
+      
+      // 1. Normalize unicode compatibility characters (e.g. 金 -> 金)
+      let targetChar = char.normalize('NFKC');
+      
+      // 2. Map specific Korean Hanja variants to standard Traditional/Simplified writer codes
+      const HANJA_FALLBACK_MAP = {
+        '敎': '教',
+        '靑': '青',
+        '溫': '温',
+        '氷': '冰',
+        '强': '強',
+        '旣': '既',
+        '內': '内',
+        '全': '全',
+        '兩': '两',
+        '黃': '黄',
+        '黑': '黑',
+        '畫': '画'
+      };
+      
+      if (HANJA_FALLBACK_MAP[targetChar]) {
+        targetChar = HANJA_FALLBACK_MAP[targetChar];
+      }
+      
+      try {
+        console.log(`HanjaWriter: Fetching strokes for mapped char "${targetChar}" (original: "${char}")`);
+        const data = await fetchStrokeData(targetChar);
         setStrokeData(data);
         setIsLoadingStrokes(false);
         if (hasStarted) setIsPlaying(true);
-      })
-      .catch((err) => {
-        console.warn('Fallback to local font rendering:', err);
+        return;
+      } catch (err) {
+        console.warn(`HanjaWriter: Mapped char "${targetChar}" failed. Trying original "${char}"...`);
+      }
+      
+      // 3. Last resort: Try original character directly
+      try {
+        const data = await fetchStrokeData(char);
+        setStrokeData(data);
+        setIsLoadingStrokes(false);
+        if (hasStarted) setIsPlaying(true);
+        return;
+      } catch (err) {
+        console.error(`HanjaWriter: Both mapped and original character failed for "${char}":`, err);
         setStrokeData(null);
         setIsLoadingStrokes(false);
-      });
+      }
+    };
+
+    loadStrokes();
   }, [currentIndex]);
 
   const handleNext = () => {
