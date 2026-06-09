@@ -726,32 +726,6 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       >
         {gameState === 'playing' ? (
           <>
-            {/* Pause Overlay */}
-            {isPaused && (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                backgroundColor: 'rgba(255, 255, 255, 0.75)',
-                backdropFilter: 'blur(3px)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 10,
-                color: 'var(--color-primary)'
-              }}>
-                <h3 className="font-display" style={{ fontSize: '1.4rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  ⏸️ 게임 일시 정지됨
-                </h3>
-                <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', margin: '6px 0 0 0' }}>
-                  화면이 다시 활성화되면 한자비가 계속 내립니다.
-                </p>
-              </div>
-            )}
-
             <style>{`
               @keyframes danger-blink {
                 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
