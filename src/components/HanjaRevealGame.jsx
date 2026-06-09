@@ -345,9 +345,10 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
           )}
         </div>
 
-        {/* Options Grid - 6 items in 2 rows of 3 */}
+        {/* Options Row - Single line with horizontal scroll on mobile */}
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', width: '100%'
+          display: 'flex', gap: '8px', width: '100%', overflowX: 'auto', 
+          paddingBottom: '8px', WebkitOverflowScrolling: 'touch'
         }}>
           {currentOptions.map((opt, idx) => (
             <button
@@ -355,16 +356,18 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               disabled={!!feedback}
               onClick={() => handleAnswer(opt)}
               style={{
-                padding: '12px 6px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
-                fontSize: '0.85rem', fontWeight: 'bold', color: '#1f2937', cursor: feedback ? 'default' : 'pointer',
+                flex: '1 0 72px', // Grow evenly, never shrink below 72px
+                padding: '12px 4px', borderRadius: '12px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
+                fontSize: '0.8rem', fontWeight: 'bold', color: '#1f2937', cursor: feedback ? 'default' : 'pointer',
                 transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', textAlign: 'center',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                wordBreak: 'keep-all'
               }}
               onMouseEnter={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.03)'; } }}
               onMouseLeave={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.backgroundColor = '#ffffff'; } }}
             >
-              <span style={{ color: 'var(--color-text-muted)' }}>{opt.meaning}</span>
-              <span style={{ color: 'var(--color-accent)', fontSize: '1.05rem' }}>{opt.sound}</span>
+              <span style={{ color: 'var(--color-text-muted)', lineHeight: '1.1' }}>{opt.meaning}</span>
+              <span style={{ color: 'var(--color-accent)', fontSize: '1.05rem', lineHeight: '1.1' }}>{opt.sound}</span>
             </button>
           ))}
         </div>
