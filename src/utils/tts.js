@@ -4,6 +4,7 @@
 let activeUtterances = [];
 const audioCache = new Map();
 let currentPlayingAudio = null;
+let pendingSpeakTimeout = null;
 
 if (typeof window !== 'undefined') {
   if ('speechSynthesis' in window) {
@@ -442,11 +443,16 @@ export const speakKorean = (text, options = {}) => {
   if (skipCancel) {
     runSpeak();
   } else {
-    setTimeout(runSpeak, 100);
+    pendingSpeakTimeout = setTimeout(runSpeak, 100);
   }
 };
 
 export const cancelSpeech = () => {
+  if (pendingSpeakTimeout) {
+    clearTimeout(pendingSpeakTimeout);
+    pendingSpeakTimeout = null;
+  }
+
   if (typeof window !== 'undefined') {
     if ('speechSynthesis' in window) {
       try {
