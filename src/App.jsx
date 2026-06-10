@@ -9,7 +9,7 @@ import FeedbackWidget from './components/FeedbackWidget';
 import LoginModal from './components/LoginModal';
 import AdminPanel from './components/AdminPanel';
 import { getProfile, saveProfile, getKstDateString } from './services/mockDb';
-import { fetchGlobalNotice } from './services/dbSync';
+import { fetchGlobalNotice, fetchGlobalFeedbacks } from './services/dbSync';
 import { Volume2, VolumeX } from 'lucide-react';
 
 export default function App() {
@@ -20,6 +20,36 @@ export default function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [showNotice, setShowNotice] = useState(false);
   const [noticeText, setNoticeText] = useState('');
+
+  useEffect(() => {
+    const syncLocalFeedbacks = async () => {
+      try {
+        const local = JSON.parse(localStorage.getItem('hanja_feedbacks') || '[]');
+        const realLocal = local.filter(f => f.id !== 'f1' && f.id !== 'f2');
+        if (realLocal.length > 0 && !localStorage.getItem('hanja_feedbacks_synced')) {
+          const cloudFeedbacks = await fetchGlobalFeedbacks();
+          let merged = [...cloudFeedbacks];
+          let changed = false;
+          for (let lf of realLocal) {
+            if (!merged.find(cf => cf.id === lf.id)) {
+              merged.push(lf);
+              changed = true;
+            }
+          }
+          if (changed) {
+            merged.sort((a, b) => b.id - a.id);
+            await fetch('https://kvdb.io/WPnA3ko81FraCfgWmNSzPM/global_hanja_feedbacks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({ feedbacks: merged })
+            });
+          }
+          localStorage.setItem('hanja_feedbacks_synced', 'true');
+        }
+      } catch (e) { console.error('Feedback sync failed', e); }
+    };
+    syncLocalFeedbacks();
+  }, []);
 
   useEffect(() => {
     if (currentScreen === 'selector') {

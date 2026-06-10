@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Plus, Lock, Unlock, ArrowLeft, Send, CheckCircle2, HelpCircle } from 'lucide-react';
-import { getFeedbackList, createFeedback } from '../services/mockDb';
+import { fetchGlobalFeedbacks, submitGlobalFeedback } from '../services/dbSync';
 
 export default function FeedbackBoard({ profile, onNavigate }) {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -14,26 +14,37 @@ export default function FeedbackBoard({ profile, onNavigate }) {
   const [writeFeedback, setWriteFeedback] = useState('');
 
   // Reload feedbacks list
-  const loadFeedbacks = () => {
-    setFeedbacks(getFeedbackList());
+  const loadFeedbacks = async () => {
+    const data = await fetchGlobalFeedbacks();
+    setFeedbacks(data);
   };
 
   useEffect(() => {
     loadFeedbacks();
   }, []);
 
-  const handleCreatePost = (e) => {
+  const handleCreatePost = async (e) => {
     e.preventDefault();
     if (!title.trim() || !body.trim()) {
       setWriteFeedback('제목과 내용을 모두 작성해 주세요.');
       return;
     }
 
-    createFeedback(category, title, body, profile.username);
+    const newFeedback = {
+      id: Date.now(),
+      category,
+      title,
+      body,
+      author: profile.username || '익명 제보자',
+      reply: null,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    await submitGlobalFeedback(newFeedback);
     setWriteFeedback('건의사항이 등록되었습니다! 작성자와 관리자만 세부 본문을 열람할 수 있습니다.');
     setTitle('');
     setBody('');
-    loadFeedbacks();
+    await loadFeedbacks();
 
     setTimeout(() => {
       setWriteFeedback('');

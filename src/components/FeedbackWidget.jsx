@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, CheckCircle2, AlertTriangle, Frown, Lightbulb, Bot } from 'lucide-react';
+import { submitGlobalFeedback } from '../services/dbSync';
 
 export default function FeedbackWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,31 +32,28 @@ export default function FeedbackWidget() {
 
     setIsSubmitting(true);
 
-    // Simulate sending feedback to developer (800ms delay)
-    setTimeout(() => {
-      const feedbackData = {
-        id: Date.now(),
-        type,
-        content,
-        contact: contact.trim() || '비공개',
-        timestamp: new Date().toLocaleString()
-      };
-
-      // Save to localStorage
-      try {
-        const existing = JSON.parse(localStorage.getItem('hanja_feedbacks') || '[]');
-        localStorage.setItem('hanja_feedbacks', JSON.stringify([...existing, feedbackData]));
-      } catch (err) {
-        console.error('Failed to save feedback to localStorage:', err);
-      }
-
-      console.log('Developer Feedback Received:', feedbackData);
-
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-      setContent('');
-      setContact('');
-    }, 800);
+    const typeLabel = type === 'bug' ? '기술적 오류' : type === 'ux' ? '사용 불편' : '기능 건의';
+    const feedbackData = {
+      id: Date.now(),
+      category: typeLabel,
+      title: `챗봇 제보: ${content.substring(0, 15)}...`,
+      body: `[연락처: ${contact.trim() || '비공개'}]\n\n${content}`,
+      author: '익명 제보자',
+      reply: null,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+      submitGlobalFeedback(feedbackData).then(() => {
+        setIsSubmitting(false);
+        setIsSubmitted(true);
+        setContent('');
+        setContact('');
+        
+        // Also save locally for legacy/optimistic UI fallback
+        try {
+          const existing = JSON.parse(localStorage.getItem('hanja_feedbacks') || '[]');
+          localStorage.setItem('hanja_feedbacks', JSON.stringify([feedbackData, ...existing]));
+        } catch (err) {}
+      });
   };
 
   const handleClose = () => {

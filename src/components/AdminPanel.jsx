@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Users, MessageSquare, BarChart3, Reply, Award, CheckCircle2, ChevronRight, Megaphone } from 'lucide-react';
-import { getFeedbackList, addFeedbackReply } from '../services/mockDb';
-import { getCloudAdminUsersList, fetchGlobalNotice, updateGlobalNotice } from '../services/dbSync';
+import { getCloudAdminUsersList, fetchGlobalNotice, updateGlobalNotice, fetchGlobalFeedbacks, replyToGlobalFeedback } from '../services/dbSync';
 
 export default function AdminPanel({ profile }) {
   const [users, setUsers] = useState([]);
@@ -16,7 +15,8 @@ export default function AdminPanel({ profile }) {
   const loadData = async () => {
     const userList = await getCloudAdminUsersList();
     setUsers(userList);
-    setFeedbacks(getFeedbackList());
+    const feedbackList = await fetchGlobalFeedbacks();
+    setFeedbacks(feedbackList);
     if (userList.length > 0) {
       setSelectedUser(userList[0]);
     }
@@ -64,7 +64,7 @@ export default function AdminPanel({ profile }) {
       return;
     }
 
-    const res = addFeedbackReply(selectedPost.id, replyText);
+    const res = await replyToGlobalFeedback(selectedPost.id, replyText);
     if (res.success) {
       setFeedbackMsg('답변이 등록 및 저장되었습니다! 📝');
       
@@ -80,7 +80,7 @@ export default function AdminPanel({ profile }) {
       await loadData();
       
       // Refresh active view
-      const updatedFeedbacks = getFeedbackList();
+      const updatedFeedbacks = await fetchGlobalFeedbacks();
       const nextPost = updatedFeedbacks.find(p => p.id === selectedPost.id);
       setSelectedPost(nextPost);
 

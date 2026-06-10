@@ -361,3 +361,59 @@ export async function updateGlobalNotice(noticeData) {
     return false;
   }
 }
+
+// --- FEEDBACK CLOUD API ---
+
+export async function fetchGlobalFeedbacks() {
+  try {
+    const url = `${KV_BASE_URL}global_hanja_feedbacks?t=${Date.now()}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      if (res.status === 404) return [];
+      throw new Error(`Failed to fetch feedbacks. Status: ${res.status}`);
+    }
+    const data = await res.json();
+    return data.feedbacks || [];
+  } catch (err) {
+    console.error('fetchGlobalFeedbacks error:', err);
+    return [];
+  }
+}
+
+export async function submitGlobalFeedback(feedback) {
+  try {
+    const currentFeedbacks = await fetchGlobalFeedbacks();
+    currentFeedbacks.unshift(feedback);
+    const url = `${KV_BASE_URL}global_hanja_feedbacks`;
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ feedbacks: currentFeedbacks })
+    });
+    return true;
+  } catch (err) {
+    console.error('submitGlobalFeedback error:', err);
+    return false;
+  }
+}
+
+export async function replyToGlobalFeedback(feedbackId, replyText) {
+  try {
+    const currentFeedbacks = await fetchGlobalFeedbacks();
+    const index = currentFeedbacks.findIndex(f => f.id === feedbackId);
+    if (index > -1) {
+      currentFeedbacks[index].reply = replyText;
+      const url = `${KV_BASE_URL}global_hanja_feedbacks`;
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ feedbacks: currentFeedbacks })
+      });
+      return { success: true, feedback: currentFeedbacks[index] };
+    }
+    return { success: false };
+  } catch (err) {
+    console.error('replyToGlobalFeedback error:', err);
+    return { success: false };
+  }
+}
