@@ -367,10 +367,10 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     const randomCard = spawnQueueRef.current.shift();
     const randomX = 10 + Math.random() * 75;
     
-    // Gentler base speed for kids (0.02 to 0.07)
-    const baseSpeed = 0.02 + Math.random() * 0.05;
+    // Increased base speed as requested by user (0.05 to 0.13)
+    const baseSpeed = 0.05 + Math.random() * 0.08;
     const speedMultiplier = 1 + (scoreRef.current / 600); // Slower speed ramp-up
-    let finalSpeed = Math.min(0.5, baseSpeed * speedMultiplier); // Capped at 0.5 to prevent super-fast falls
+    let finalSpeed = Math.min(0.8, baseSpeed * speedMultiplier); // Capped at 0.8 to prevent super-fast falls
 
     // 한일(一), 두이(二), 석삼(三) 은 매우 쉬우므로 속도를 2배 빠르게 적용
     if (randomCard.char === '一' || randomCard.char === '二' || randomCard.char === '三') {
