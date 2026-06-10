@@ -220,3 +220,5 @@
    * **수호 규칙:** `dbSync.js`의 `saveProfileToCloud`와 `loadProfileFromCloud` 페이로드에 반드시 `streakLastActive`, `lastActiveDate`, `flashcardsToday` 항목을 포함해야 합니다. 이를 누락할 경우 로그인/재로그인 시 유저의 연속 학습일 기준점(KST)이 삭제되어 무조건 스트릭이 1일로 리셋되는 치명적 버그가 재발합니다.
 15. **[랭킹] 리더보드 실시간 동기화 락 (Leaderboard Sync Lock):**
    * **수호 규칙:** `Leaderboard.jsx`에서 로그인 유저의 랭킹 정보를 즉각 렌더링(Optimistic UI)할 때, 하드코딩된 경험치 구간이 아닌 메인 등급 판정 모듈(`getRankByXp`)을 사용하여 `profile.xp`와 `profile.streak` 두 조건을 모두 적용해야 합니다. 또한 데이터 갱신 `useEffect` 의존성 배열에 반드시 `profile.streak`를 포함시켜 연속 출석일 갱신 시 랭킹 보드도 실시간으로 리렌더링되도록 유지해야 합니다.
+16. **[게임 엔진] 가려진 한자 게임 트랜지션 초기화 락 (Reveal Game Transition Reset Lock):**
+   * **수호 규칙:** `HanjaRevealGame.jsx`에서 4단계(완전 노출)에서 다음 문제로 넘어갈 때, 이전 렌더링의 CSS `transition` 애니메이션 잔상이 남아 정답이 잠깐 스포일러되는 치명적인 시각 오류를 방지하기 위해, 한자가 렌더링되는 `div`에 반드시 `key={currentIndex}`를 부여하여 문제 전환 시 React DOM이 강제로 새로 마운트되도록 하는 안전장치를 영구 보존해야 합니다.
