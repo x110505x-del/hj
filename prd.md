@@ -224,3 +224,5 @@
    * **수호 규칙:** `HanjaRevealGame.jsx`에서 4단계(완전 노출)에서 다음 문제로 넘어갈 때, 이전 렌더링의 CSS `transition` 애니메이션 잔상이 남아 정답이 잠깐 스포일러되는 치명적인 시각 오류를 방지하기 위해, 한자가 렌더링되는 `div`에 반드시 `key={currentIndex}`를 부여하여 문제 전환 시 React DOM이 강제로 새로 마운트되도록 하는 안전장치를 영구 보존해야 합니다.
 17. **[통제실] 건의사항 글로벌 클라우드 동기화 및 마이그레이션 락 (Feedback Cloud Sync Lock):**
    * **수호 규칙:** 챗봇(`FeedbackWidget.jsx`)과 게시판(`FeedbackBoard.jsx`)에서 접수되는 모든 건의사항은 로컬 스토리지가 아닌 `dbSync.js`의 `submitGlobalFeedback`을 통해 실시간으로 KV 클라우드로 전송되어야 합니다. 또한, 수련생들의 과거 로컬 데이터를 클라우드로 끌어올리기 위해 `App.jsx`에 심어둔 `syncLocalFeedbacks` 최초 1회 자동 병합(Migration) `useEffect` 로직을 영구 보존해야 합니다. (삭제 시 과거 피드백들이 관리자 통제실로 인입되지 않는 누락 사고가 발생합니다.)
+18. **[게임 엔진] 한자비 고주사율 및 CSS 애니메이션 충돌 방지 락 (Rain Game Rendering Lock):**
+   * **수호 규칙:** `HanjaRainGame`의 메인 루프에서 강제 프레임 드랍(60FPS Cap) 로직을 절대 복구하지 마십시오. 고주사율(144Hz+) 모니터 및 윈도우 11 환경에서의 화면 멈춤(Freezing)을 막기 위해 반드시 `renderDelta / 16.666`에 기반한 `timeScale` 곱셈 연산으로 픽셀 이동 거리를 보정해야 합니다. 또한, 자바스크립트로 `top`, `left` 좌표가 프레임마다 갱신되는 게임 객체 요소(Hanja Div)에 CSS `transition: all 0.2s` 같은 광범위 전환 효과를 부여하면 브라우저 렌더링 엔진과 충돌하여 객체가 공중에 얼어붙으므로, 좌표 속성에는 절대로 CSS transition을 적용하지 마십시오.
