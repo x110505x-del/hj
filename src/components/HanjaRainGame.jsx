@@ -743,7 +743,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
                       : '0 2px 6px rgba(16, 185, 129, 0.15)',
                     pointerEvents: 'none',
                     animation: isNearBottom ? 'danger-blink 0.35s infinite alternate ease-in-out' : 'none',
-                    transition: 'all 0.2s ease'
+                    transition: 'color 0.2s ease, text-shadow 0.2s ease'
                   }}
                 >
                   {item.char}
