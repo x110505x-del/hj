@@ -155,18 +155,16 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     if (gameState !== 'playing') return;
 
     let rAF;
+    let lastRenderTime = null;
+
     const updateGame = (timestamp) => {
-      // Prevent high refresh rate (144Hz+) desktop monitors from executing game logic too fast
-      if (!animationFrameRef.lastRender) animationFrameRef.lastRender = timestamp;
-      const renderDelta = timestamp - animationFrameRef.lastRender;
-      
-      if (renderDelta < 16) {
-        // Skip this frame if less than ~16ms (60 FPS cap) has passed to prevent speed-up and render locks
-        rAF = requestAnimationFrame(updateGame);
-        animationFrameRef.current = rAF;
-        return;
-      }
-      animationFrameRef.lastRender = timestamp;
+      if (lastRenderTime === null) lastRenderTime = timestamp;
+      const renderDelta = timestamp - lastRenderTime;
+      lastRenderTime = timestamp;
+
+      // Calculate timeScale based on standard 60fps (16.66ms per frame)
+      // Cap at 5.0 (approx 83ms) to prevent Hanja falling through floor if tab was backgrounded
+      const timeScale = Math.min(5.0, renderDelta / 16.666);
 
       // Synchronized Spawn Logic:
       // Prevent Edge browser bug where timestamp can be 0 on first frame
@@ -187,7 +185,7 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
         let reachedBottomCount = 0;
         const hitItems = [];
         const updated = currentFalling.map((item) => {
-          const nextY = item.y + item.speed;
+          const nextY = item.y + (item.speed * timeScale);
           if (nextY >= 89) { // Increased to 89% so the Hanja visually crosses the red line completely before a miss triggers
             reachedBottomCount++;
             hitItems.push({ ...item, y: nextY, hitFloor: true });
@@ -227,10 +225,10 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       if (currentParticles.length > 0) {
         const nextParticles = currentParticles.map((p) => ({
           ...p,
-          x: p.x + p.vx,
-          y: p.y + p.vy,
-          vy: p.vy + 0.15, // gravity
-          alpha: p.alpha - 0.02
+          x: p.x + (p.vx * timeScale),
+          y: p.y + (p.vy * timeScale),
+          vy: p.vy + (0.15 * timeScale), // gravity
+          alpha: p.alpha - (0.02 * timeScale)
         })).filter((p) => p.alpha > 0);
         
         particlesRef.current = nextParticles;
