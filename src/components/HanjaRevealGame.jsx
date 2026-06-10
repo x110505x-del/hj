@@ -315,7 +315,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
           </div>
 
           {/* Actual Hanja Character with Clip Path */}
-          <div style={{
+          <div key={currentIndex} style={{
             fontSize: 'clamp(150px, 28vw, 240px)', fontWeight: 'bold', color: '#1e293b', fontFamily: '"AppleMyungjo", "Songti SC", "Songti TC", "Batang", serif',
             clipPath: clipPathStyle, transition: 'clip-path 0.5s ease-in-out', WebkitClipPath: clipPathStyle,
             lineHeight: 1, textShadow: '0px 4px 10px rgba(0,0,0,0.05)'
