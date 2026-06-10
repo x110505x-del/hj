@@ -222,3 +222,5 @@
    * **수호 규칙:** `Leaderboard.jsx`에서 로그인 유저의 랭킹 정보를 즉각 렌더링(Optimistic UI)할 때, 하드코딩된 경험치 구간이 아닌 메인 등급 판정 모듈(`getRankByXp`)을 사용하여 `profile.xp`와 `profile.streak` 두 조건을 모두 적용해야 합니다. 또한 데이터 갱신 `useEffect` 의존성 배열에 반드시 `profile.streak`를 포함시켜 연속 출석일 갱신 시 랭킹 보드도 실시간으로 리렌더링되도록 유지해야 합니다.
 16. **[게임 엔진] 가려진 한자 게임 트랜지션 초기화 락 (Reveal Game Transition Reset Lock):**
    * **수호 규칙:** `HanjaRevealGame.jsx`에서 4단계(완전 노출)에서 다음 문제로 넘어갈 때, 이전 렌더링의 CSS `transition` 애니메이션 잔상이 남아 정답이 잠깐 스포일러되는 치명적인 시각 오류를 방지하기 위해, 한자가 렌더링되는 `div`에 반드시 `key={currentIndex}`를 부여하여 문제 전환 시 React DOM이 강제로 새로 마운트되도록 하는 안전장치를 영구 보존해야 합니다.
+17. **[통제실] 건의사항 글로벌 클라우드 동기화 및 마이그레이션 락 (Feedback Cloud Sync Lock):**
+   * **수호 규칙:** 챗봇(`FeedbackWidget.jsx`)과 게시판(`FeedbackBoard.jsx`)에서 접수되는 모든 건의사항은 로컬 스토리지가 아닌 `dbSync.js`의 `submitGlobalFeedback`을 통해 실시간으로 KV 클라우드로 전송되어야 합니다. 또한, 수련생들의 과거 로컬 데이터를 클라우드로 끌어올리기 위해 `App.jsx`에 심어둔 `syncLocalFeedbacks` 최초 1회 자동 병합(Migration) `useEffect` 로직을 영구 보존해야 합니다. (삭제 시 과거 피드백들이 관리자 통제실로 인입되지 않는 누락 사고가 발생합니다.)
