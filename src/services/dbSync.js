@@ -54,6 +54,7 @@ export async function saveProfileToCloud(profile) {
       streakLastActive: profile.streakLastActive,
       lastActiveDate: profile.lastActiveDate,
       flashcardsToday: profile.flashcardsToday,
+      loginSessionId: profile.loginSessionId,
       lastUpdated: new Date().toISOString()
     };
 
@@ -115,7 +116,8 @@ export async function loadProfileFromCloud(email, provider) {
       wrongHanjaNotes: cloudData.wrongHanjaNotes || {},
       streakLastActive: cloudData.streakLastActive || null,
       lastActiveDate: cloudData.lastActiveDate || null,
-      flashcardsToday: cloudData.flashcardsToday || 0
+      flashcardsToday: cloudData.flashcardsToday || 0,
+      loginSessionId: cloudData.loginSessionId || null
     };
   } catch (error) {
     console.error('Cloud load error:', error);
@@ -173,7 +175,7 @@ export async function fetchGlobalLeaderboard() {
                     gold: profile.gold ?? 0,
                     xp: xp,
                     rankName: rName,
-                    lastUpdated: profile.lastUpdated ? new Date(profile.lastUpdated).getTime() : new Date().getTime()
+                    lastUpdated: profile.lastUpdated ? new Date(profile.lastUpdated).getTime() : 0
                   };
                 }
               }

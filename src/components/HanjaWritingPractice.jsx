@@ -511,7 +511,7 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
         boxSizing: 'border-box'
       }}>
         <div>
-          <h2 style={{ fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '8px', fontWeight: 'bold' }}>
+          <h2 style={{ fontSize: 'clamp(1.2rem, 5vw, 2rem)', color: 'var(--color-primary)', marginBottom: '8px', fontWeight: 'bold', whiteSpace: 'nowrap', wordBreak: 'keep-all', letterSpacing: '-0.5px' }}>
             한자쓰기 연습 (전체 급수)
           </h2>
           <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', lineHeight: '1.5', marginBottom: '8px' }}>

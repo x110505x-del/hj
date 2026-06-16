@@ -23,7 +23,16 @@ export default function Leaderboard({ profile }) {
   const refreshData = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchGlobalLeaderboard();
+      const rawData = await fetchGlobalLeaderboard();
+      
+      // Filter out users who haven't logged in for the last 3 days
+      const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      const data = rawData.filter(u => {
+        if (!u.lastUpdated) return false;
+        return (now - u.lastUpdated) <= THREE_DAYS_MS;
+      });
+
       const myId = profile.isLoggedIn && profile.email ? obfuscateEmail(profile.email) : '';
 
       // ⚠️ CRITICAL GUARDRAIL: Match by hashed email ID (myId) instead of nickname.

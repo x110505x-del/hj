@@ -123,22 +123,24 @@ export default function AdminPanel({ profile }) {
         <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 12px 0' }}>
           작성 시 즉시 모든 수련생의 메인 화면에 팝업창으로 송출됩니다. (삭제 시 즉시 내려감)
         </p>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <input
-            type="text"
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <textarea
+            rows="5"
             value={globalNoticeText}
             onChange={(e) => setGlobalNoticeText(e.target.value)}
             placeholder="공지할 내용을 입력하세요 (예: 현재 잔잔한 오류를 수정중 입니다!)"
             style={{
-              flex: '1 1 250px', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', outline: 'none'
+              flex: '1 1 250px', padding: '10px', borderRadius: '8px', border: '1px solid var(--color-border)', outline: 'none', resize: 'vertical', fontFamily: 'inherit'
             }}
           />
-          <button onClick={handleSaveNotice} className="theme-btn theme-btn-primary" style={{ padding: '0 16px', whiteSpace: 'nowrap' }}>
-            팝업 송출
-          </button>
-          <button onClick={handleDeleteNotice} className="theme-btn" style={{ padding: '0 16px', backgroundColor: '#ef4444', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}>
-            삭제
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button onClick={handleSaveNotice} className="theme-btn theme-btn-primary" style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
+              팝업 송출
+            </button>
+            <button onClick={handleDeleteNotice} className="theme-btn" style={{ padding: '10px 16px', backgroundColor: '#ef4444', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}>
+              삭제
+            </button>
+          </div>
         </div>
         {noticeMsg && <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--color-accent)', fontWeight: 'bold' }}>{noticeMsg}</div>}
       </div>
@@ -235,7 +237,7 @@ export default function AdminPanel({ profile }) {
                       }}
                     >
                       <td style={{ padding: '8px', fontWeight: 'bold' }}>{u.username}</td>
-                      <td style={{ padding: '8px', color: 'var(--color-text-muted)' }}>{u.email}</td>
+                      <td style={{ padding: '8px', color: 'var(--color-text-muted)' }}>{u.email === 'undefined' ? '로그인 미연동(익명)' : u.email}</td>
                       <td style={{ padding: '8px' }}>{u.currentLevel}</td>
                       <td style={{ padding: '8px', color: 'var(--color-secondary)', fontWeight: 'bold' }}>{u.xp}</td>
                       <td style={{ padding: '8px' }}>

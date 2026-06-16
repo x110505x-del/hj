@@ -28,7 +28,7 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
     // Disabled login/signup voice guidance by user request
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
@@ -38,27 +38,46 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
       return;
     }
 
-    // Mock Login Success
-    const updatedName = loginEmail.includes('@') ? loginEmail.split('@')[0] : loginEmail;
-    const updated = {
-      ...profile,
-      isLoggedIn: true,
-      email: loginEmail,
-      username: updatedName,
-      authProvider: 'email',
-      isPrivacyFirst: false
-    };
+    setIsSubmitting(true);
 
-    setSuccessMsg('성공적으로 로그인되었습니다! 환영합니다.');
-    triggerTtsFeedback(`${updatedName}님, 로그인 되었습니다. 환영합니다!`);
-    onUpdateProfile(updated);
+    try {
+      const existingProfile = await loadProfileFromCloud(loginEmail, 'email');
+      const updatedName = loginEmail.includes('@') ? loginEmail.split('@')[0] : loginEmail;
 
-    setTimeout(() => {
-      onClose();
-    }, 1200);
+      const newSessionId = Date.now() + '_' + Math.random().toString(36).substring(2);
+
+      if (existingProfile) {
+        existingProfile.loginSessionId = newSessionId;
+        setSuccessMsg(`성공적으로 로그인되었습니다! 클라우드에서 이전 기록을 가져왔습니다! (골드: ${existingProfile.gold}G)`);
+        triggerTtsFeedback(`${existingProfile.username}님, 수련 기록을 클라우드에서 복구했습니다.`);
+        onUpdateProfile(existingProfile);
+      } else {
+        const updated = {
+          ...profile,
+          isLoggedIn: true,
+          email: loginEmail,
+          username: updatedName,
+          authProvider: 'email',
+          isPrivacyFirst: false,
+          loginSessionId: newSessionId
+        };
+        await saveProfileToCloud(updated);
+        setSuccessMsg('성공적으로 로그인되었습니다! 환영합니다.');
+        triggerTtsFeedback(`${updatedName}님, 로그인 되었습니다. 환영합니다!`);
+        onUpdateProfile(updated);
+      }
+      setIsSubmitting(false);
+      setTimeout(() => {
+        onClose();
+      }, 1200);
+    } catch (error) {
+      console.error(error);
+      setErrorMsg('클라우드 동기화 중 오류가 발생했습니다.');
+      setIsSubmitting(false);
+    }
   };
 
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
@@ -73,23 +92,43 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
       return;
     }
 
-    // Mock Sign Up Success
-    const updated = {
-      ...profile,
-      isLoggedIn: true,
-      email: signupEmail,
-      username: signupUsername,
-      authProvider: 'email',
-      isPrivacyFirst: false
-    };
+    setIsSubmitting(true);
 
-    setSuccessMsg('회원가입이 완료되었습니다! 자동 로그인되었습니다.');
-    triggerTtsFeedback(`${signupUsername}님, 회원가입이 완료되었습니다. 반갑습니다!`);
-    onUpdateProfile(updated);
+    try {
+      const existingProfile = await loadProfileFromCloud(signupEmail, 'email');
+      if (existingProfile) {
+        setErrorMsg('이미 존재하는 계정입니다. 로그인해 주세요.');
+        setIsSubmitting(false);
+        return;
+      }
 
-    setTimeout(() => {
-      onClose();
-    }, 1200);
+      const newSessionId = Date.now() + '_' + Math.random().toString(36).substring(2);
+
+      const updated = {
+        ...profile,
+        isLoggedIn: true,
+        email: signupEmail,
+        username: signupUsername,
+        authProvider: 'email',
+        isPrivacyFirst: false,
+        loginSessionId: newSessionId
+      };
+
+      await saveProfileToCloud(updated);
+
+      setSuccessMsg('회원가입이 완료되었습니다! 자동 로그인되었습니다.');
+      triggerTtsFeedback(`${signupUsername}님, 회원가입이 완료되었습니다. 반갑습니다!`);
+      onUpdateProfile(updated);
+      setIsSubmitting(false);
+
+      setTimeout(() => {
+        onClose();
+      }, 1200);
+    } catch (error) {
+      console.error(error);
+      setErrorMsg('클라우드 연동 중 오류가 발생했습니다.');
+      setIsSubmitting(false);
+    }
   };
 
   // Trigger step 2: email input for social sync
@@ -125,7 +164,10 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
       // 1. Try to load existing profile from cloud using the hashed email
       const existingProfile = await loadProfileFromCloud(socialEmail, provider);
 
+      const newSessionId = Date.now() + '_' + Math.random().toString(36).substring(2);
+
       if (existingProfile) {
+        existingProfile.loginSessionId = newSessionId;
         // Found existing record on the cloud!
         setSuccessMsg(`[${providerName} 연동 성공] 클라우드에서 이전 기록을 가져왔습니다! (골드: ${existingProfile.gold}G, 연속 학습: ${existingProfile.streak}일)`);
         triggerTtsFeedback(`${existingProfile.username}님, 수련 기록을 클라우드에서 복구했습니다. 반갑습니다!`);
@@ -154,7 +196,8 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
           username: nickname,
           email: socialEmail.trim().toLowerCase(),
           authProvider: provider,
-          isPrivacyFirst: true
+          isPrivacyFirst: true,
+          loginSessionId: newSessionId
         };
 
         // Save new profile to cloud

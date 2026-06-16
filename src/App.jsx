@@ -8,9 +8,11 @@ import HanjaRevealGame from './components/HanjaRevealGame';
 import FeedbackWidget from './components/FeedbackWidget';
 import LoginModal from './components/LoginModal';
 import AdminPanel from './components/AdminPanel';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 import { getProfile, saveProfile, getKstDateString } from './services/mockDb';
-import { fetchGlobalNotice, fetchGlobalFeedbacks } from './services/dbSync';
+import { fetchGlobalNotice, fetchGlobalFeedbacks, loadProfileFromCloud, saveProfileToCloud } from './services/dbSync';
 import { Volume2, VolumeX } from 'lucide-react';
+import { getRadicalsByStrokes, getCumulativeRadicalCards } from './services/radicalDb';
 
 export default function App() {
   const [selectedLevel, setSelectedLevel] = useState('8급');
@@ -20,6 +22,11 @@ export default function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [showNotice, setShowNotice] = useState(false);
   const [noticeText, setNoticeText] = useState('');
+  const [radicalMode, setRadicalMode] = useState(false);
+  const [radicalStrokes, setRadicalStrokes] = useState('all');
+  const [isRadicalModalOpen, setIsRadicalModalOpen] = useState(false);
+  const [activeRadicalGame, setActiveRadicalGame] = useState(null); // null | 'flashcard' | 'reveal_game' | 'speed_quiz' | 'rain_game'
+  const [radicalGameCards, setRadicalGameCards] = useState([]);
 
   useEffect(() => {
     const syncLocalFeedbacks = async () => {
@@ -81,19 +88,19 @@ export default function App() {
     const today = getKstDateString();
     let updated = getProfile();
 
-    // 1. Reset daily count if date changed
-    if (updated.lastActiveDate !== today) {
-      updated.lastActiveDate = today;
-      updated.flashcardsToday = 0;
+    const isAnon = !updated.isLoggedIn;
+    if (isAnon) {
+      goldEarned = 0;
+      xpEarned = 0;
     }
 
-    // 2. Award game rewards
-    updated.gold += goldEarned;
-    updated.xp += xpEarned;
+    // 1. Update overall gold/xp
+    updated.gold = (updated.gold || 0) + goldEarned;
+    updated.xp = (updated.xp || 0) + xpEarned;
 
     // 3. Perform daily check-in (streak) if not already done today AND the user earned gold or succeeded!
     let streakMsg = '';
-    if ((isSuccess || goldEarned > 0) && updated.streakLastActive !== today) {
+    if ((isSuccess || goldEarned > 0) && updated.streakLastActive !== today && !isAnon) {
       let streak = updated.streak;
       if (updated.streakLastActive) {
         const last = new Date(updated.streakLastActive + 'T00:00:00Z');
@@ -115,24 +122,37 @@ export default function App() {
 
     setProfile(updated);
     saveProfile(updated);
-
-    if (soundOn && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const speechText = isSuccess 
-        ? `수련 완료. ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`
-        : `도전 실패. 하지만 ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`;
-      const utterance = new SpeechSynthesisUtterance(speechText);
-      utterance.lang = 'ko-KR';
-      window.speechSynthesis.speak(utterance);
+    if (updated.isLoggedIn) {
+      saveProfileToCloud(updated);
     }
 
-    if (streakMsg) {
-      alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)\n\n${streakMsg}`);
+    if (isAnon) {
+      if (soundOn && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance("로그인을 하시면 더욱 재미있는 수련을 할 수 있어요!");
+        utterance.lang = 'ko-KR';
+        window.speechSynthesis.speak(utterance);
+      }
+      alert("로그인을 하시면 더욱 재미있는 수련을 할 수 있어요!");
     } else {
-      if (isSuccess) {
-        alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)`);
+      if (soundOn && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const speechText = isSuccess 
+          ? `수련 완료. ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`
+          : `도전 실패. 하지만 ${goldEarned} 골드와 ${xpEarned} 경험치를 획득했습니다.`;
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        utterance.lang = 'ko-KR';
+        window.speechSynthesis.speak(utterance);
+      }
+
+      if (streakMsg) {
+        alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)\n\n${streakMsg}`);
       } else {
-        alert(`😢 수련 실패!\n미션에 실패했습니다. (출석 불인정)\n(기본 보상 획득: +${goldEarned} Gold, +${xpEarned} XP)`);
+        if (isSuccess) {
+          alert(`🎉 수련 완료!\n(획득: +${goldEarned} Gold, +${xpEarned} XP)`);
+        } else {
+          alert(`😢 수련 실패!\n미션에 실패했습니다. (출석 불인정)\n(기본 보상 획득: +${goldEarned} Gold, +${xpEarned} XP)`);
+        }
       }
     }
   };
@@ -151,7 +171,7 @@ export default function App() {
     updated.flashcardsToday = (updated.flashcardsToday || 0) + 1;
 
     // 3. Check if they reached exactly 50 cards today and haven't checked in yet
-    if (updated.flashcardsToday === 50 && updated.streakLastActive !== today) {
+    if (updated.flashcardsToday === 50 && updated.streakLastActive !== today && updated.isLoggedIn) {
       let streak = updated.streak;
       if (updated.streakLastActive) {
         const last = new Date(updated.streakLastActive + 'T00:00:00Z');
@@ -176,10 +196,21 @@ export default function App() {
         window.speechSynthesis.speak(utterance);
       }
       alert(`🔥 플래시 카드 50자 학습 완료! 연속 ${streak}일 출석 성공!\n(보상: +30 XP)`);
+    } else if (updated.flashcardsToday === 50 && !updated.isLoggedIn) {
+      if (soundOn && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance("로그인을 하시면 더욱 재미있는 수련을 할 수 있어요!");
+        utterance.lang = 'ko-KR';
+        window.speechSynthesis.speak(utterance);
+      }
+      alert("로그인을 하시면 더욱 재미있는 수련을 할 수 있어요!");
     }
 
     setProfile(updated);
     saveProfile(updated);
+    if (updated.isLoggedIn) {
+      saveProfileToCloud(updated);
+    }
   };
 
   // Scroll to top on screen change to ensure header is visible and content layout is clean
@@ -259,6 +290,29 @@ export default function App() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [profile.isLoggedIn]);
+
+  // Concurrent login monitor
+  useEffect(() => {
+    if (!profile.isLoggedIn || !profile.email || !profile.loginSessionId) return;
+
+    const checkConcurrentLogin = async () => {
+      try {
+        const cloudProfile = await loadProfileFromCloud(profile.email, profile.authProvider);
+        if (cloudProfile && cloudProfile.loginSessionId) {
+          if (cloudProfile.loginSessionId !== profile.loginSessionId) {
+            handleLogout();
+            alert("⚠️ 다른 기기에서 로그인이 감지되어 자동으로 로그아웃되었습니다.");
+            setCurrentScreen('selector');
+          }
+        }
+      } catch (e) {
+        console.error("Concurrent login check failed", e);
+      }
+    };
+
+    const interval = setInterval(checkConcurrentLogin, 30000);
+    return () => clearInterval(interval);
+  }, [profile.isLoggedIn, profile.email, profile.loginSessionId, profile.authProvider]);
 
   const handleToggleSound = () => {
     setSoundOn(prev => {
@@ -367,7 +421,7 @@ export default function App() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '1.4rem' }}>🚧</span>
-                  <span style={{ color: '#92400e', fontWeight: 'bold', fontSize: '0.95rem', whiteSpace: 'pre-wrap' }}>
+                  <span style={{ color: '#92400e', fontWeight: 'bold', fontSize: 'clamp(0.75rem, 3.5vw, 0.95rem)', whiteSpace: 'pre-wrap', wordBreak: 'keep-all' }}>
                     {noticeText}
                   </span>
                 </div>
@@ -406,12 +460,45 @@ export default function App() {
               onUpdateProfile={(updated) => {
                 setProfile(updated);
                 saveProfile(updated);
+                if (updated.isLoggedIn) {
+                  saveProfileToCloud(updated);
+                }
               }}
+              onStartRadicalFlashcards={(strokes) => {
+                setRadicalMode(true);
+                setRadicalStrokes(strokes);
+                setActiveRadicalGame('flashcard');
+                setRadicalGameCards(getRadicalsByStrokes(strokes));
+                setIsRadicalModalOpen(false);
+              }}
+              onStartRadicalReveal={(strokes) => {
+                setRadicalMode(true);
+                setRadicalStrokes(strokes);
+                setActiveRadicalGame('reveal_game');
+                setRadicalGameCards(getCumulativeRadicalCards(strokes));
+                setIsRadicalModalOpen(false);
+              }}
+              onStartRadicalSpeedQuiz={(strokes) => {
+                setRadicalMode(true);
+                setRadicalStrokes(strokes);
+                setActiveRadicalGame('speed_quiz');
+                setRadicalGameCards(getCumulativeRadicalCards(strokes));
+                setIsRadicalModalOpen(false);
+              }}
+              onStartRadicalRainGame={(strokes) => {
+                setRadicalMode(true);
+                setRadicalStrokes(strokes);
+                setActiveRadicalGame('rain_game');
+                setRadicalGameCards(getCumulativeRadicalCards(strokes));
+                setIsRadicalModalOpen(false);
+              }}
+              isRadicalModalOpen={isRadicalModalOpen}
+              setIsRadicalModalOpen={setIsRadicalModalOpen}
             />
           </div>
         )}
 
-        {currentScreen === 'flashcard' && (
+        {currentScreen === 'flashcard' && !radicalMode && (
           <Flashcards
             level={selectedLevel}
             onBack={() => setCurrentScreen('selector')}
@@ -421,7 +508,7 @@ export default function App() {
           />
         )}
 
-        {currentScreen === 'speed_quiz' && (
+        {currentScreen === 'speed_quiz' && !radicalMode && (
           <SpeedQuiz
             level={selectedLevel}
             onBack={() => setCurrentScreen('selector')}
@@ -431,7 +518,7 @@ export default function App() {
           />
         )}
 
-        {currentScreen === 'rain_game' && (
+        {currentScreen === 'rain_game' && !radicalMode && (
           <HanjaRainGame
             level={selectedLevel}
             onBack={() => setCurrentScreen('selector')}
@@ -450,7 +537,7 @@ export default function App() {
           />
         )}
 
-        {currentScreen === 'reveal_game' && (
+        {currentScreen === 'reveal_game' && !radicalMode && (
           <HanjaRevealGame
             level={selectedLevel}
             onBack={() => setCurrentScreen('selector')}
@@ -458,6 +545,114 @@ export default function App() {
             onToggleSound={handleToggleSound}
             onCompleteGame={handleCompleteGame}
           />
+        )}
+
+        {radicalMode && activeRadicalGame && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.4)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 9998,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              boxSizing: 'border-box',
+              animation: 'fadeIn 0.2s ease-out'
+            }}
+          >
+            <div 
+              className="glass-card"
+              style={{
+                width: '100%',
+                maxWidth: activeRadicalGame === 'rain_game' ? '980px' : (activeRadicalGame === 'flashcard' ? '860px' : '780px'),
+                maxHeight: '95vh',
+                overflowY: 'auto',
+                padding: '24px 20px',
+                borderRadius: '24px',
+                boxShadow: 'var(--shadow-2xl)',
+                backgroundColor: '#ffffff',
+                border: '1px solid var(--color-border)',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative'
+              }}
+            >
+              {activeRadicalGame === 'flashcard' && (
+                <Flashcards
+                  level={radicalStrokes === 'all' ? '전체 부수' : `부수 ${radicalStrokes}획`}
+                  customCards={radicalGameCards}
+                  isRadicalMode={true}
+                  onBack={() => {
+                    setActiveRadicalGame(null);
+                    setRadicalMode(false);
+                    setRadicalGameCards([]);
+                    setIsRadicalModalOpen(true);
+                  }}
+                  soundOn={soundOn}
+                  onToggleSound={handleToggleSound}
+                  onStudyCard={handleStudyCard}
+                />
+              )}
+
+              {activeRadicalGame === 'reveal_game' && (
+                <HanjaRevealGame
+                  level={radicalStrokes === 'all' ? '전체 부수' : `부수 ${radicalStrokes}획`}
+                  customCards={radicalGameCards}
+                  isRadicalMode={true}
+                  onBack={() => {
+                    setActiveRadicalGame(null);
+                    setRadicalMode(false);
+                    setRadicalGameCards([]);
+                    setIsRadicalModalOpen(true);
+                  }}
+                  soundOn={soundOn}
+                  onToggleSound={handleToggleSound}
+                  onCompleteGame={handleCompleteGame}
+                />
+              )}
+
+              {activeRadicalGame === 'speed_quiz' && (
+                <SpeedQuiz
+                  level={radicalStrokes === 'all' ? '전체 부수' : `부수 ${radicalStrokes}획`}
+                  customCards={radicalGameCards}
+                  isRadicalMode={true}
+                  onBack={() => {
+                    setActiveRadicalGame(null);
+                    setRadicalMode(false);
+                    setRadicalGameCards([]);
+                    setIsRadicalModalOpen(true);
+                  }}
+                  soundOn={soundOn}
+                  onToggleSound={handleToggleSound}
+                  onCompleteGame={handleCompleteGame}
+                />
+              )}
+
+              {activeRadicalGame === 'rain_game' && (
+                <HanjaRainGame
+                  level={radicalStrokes === 'all' ? '전체 부수' : `부수 ${radicalStrokes}획`}
+                  customCards={radicalGameCards}
+                  isRadicalMode={true}
+                  onBack={() => {
+                    setActiveRadicalGame(null);
+                    setRadicalMode(false);
+                    setRadicalGameCards([]);
+                    setIsRadicalModalOpen(true);
+                  }}
+                  soundOn={soundOn}
+                  onToggleSound={handleToggleSound}
+                  onCompleteGame={handleCompleteGame}
+                />
+              )}
+            </div>
+          </div>
         )}
 
         {currentScreen === 'admin' ? (
@@ -507,8 +702,8 @@ export default function App() {
 
       {/* Footnote */}
       <footer className="footer-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        <span className="desktop-footer-text">&copy; 2026 한자 마스터. All Rights Reserved. | 급수별 한자 게임 수련장 🏆</span>
-        <span className="mobile-footer-text">&copy; 2026 한자 마스터.</span>
+        <span className="desktop-footer-text">&copy; 2026 Developed by Choi Hyeon-sook</span>
+        <span className="mobile-footer-text">&copy; 2026 Developed by Choi Hyeon-sook</span>
         {profile && profile.isLoggedIn && profile.email === 'x110505x@gmail.com' && (
           <>
             <span style={{ color: 'var(--color-border)' }}>|</span>
@@ -537,6 +732,9 @@ export default function App() {
       
       {/* Floating global feedback widget - Shown ONLY on main Selector Dashboard */}
       {currentScreen === 'selector' && <FeedbackWidget />}
+
+      {/* Floating PWA Install Prompt - Shown ONLY on main Selector Dashboard */}
+      {currentScreen === 'selector' && <PwaInstallPrompt />}
 
       {/* 🔐 Authentication Modal Overlay */}
       {isLoginOpen && (

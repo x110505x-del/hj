@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Volume2, VolumeX, ArrowLeft, RefreshCw, Play
 import { getHanjaByLevel, HANJA_RAW_DATA } from '../services/hanjaDb';
 import { speakKorean, cancelSpeech, unlockTtsAudio, preloadKoreanSpeech } from '../utils/tts';
 
-export default function Flashcards({ level, onBack, soundOn, onToggleSound, onStudyCard }) {
+export default function Flashcards({ level, onBack, soundOn, onToggleSound, onStudyCard, customCards, isRadicalMode }) {
   const [shuffledList, setShuffledList] = useState([]);
   const [learningPhase, setLearningPhase] = useState('start'); // 'start' | 'learn' | 'transition' | 'review' | 'complete'
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -199,16 +199,16 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound, onSt
 
   // Load Hanja List
   useEffect(() => {
-    const rawList = level === '8급' 
-      ? getHanjaByLevel('8급') 
-      : (HANJA_RAW_DATA[level] || []);
+    const rawList = customCards 
+      ? customCards 
+      : (level === '8급' ? getHanjaByLevel('8급') : (HANJA_RAW_DATA[level] || []));
 
     const shuffled = [...rawList].sort(() => 0.5 - Math.random());
     setShuffledList(shuffled);
     setCurrentIndex(0);
     setLearningPhase('start');
     setIsPaused(false);
-  }, [level]);
+  }, [level, customCards]);
 
   // Preload upcoming card audios to avoid lag
   useEffect(() => {
@@ -428,7 +428,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound, onSt
         }}>
           <Award size={64} style={{ color: 'var(--color-primary)', marginBottom: '20px' }} />
           <h2 style={{ fontSize: '1.8rem', color: 'var(--color-primary)', marginBottom: '20px', fontWeight: 'bold' }}>
-            1차 배정한자 학습 완료!
+            {isRadicalMode ? '1차 부수 학습 완료!' : '1차 배정한자 학습 완료!'}
           </h2>
           <p style={{ fontSize: '1.25rem', color: '#111827', fontWeight: 'bold', lineHeight: '1.6', marginBottom: '16px' }}>
             "두번째 반복될때는 한자를 보고 뜻과 음을 맞춰보세요!"
@@ -497,7 +497,7 @@ export default function Flashcards({ level, onBack, soundOn, onToggleSound, onSt
             학습 및 복습 완료! 🎉
           </h2>
           <p style={{ fontSize: '1.1rem', color: '#1f2937', lineHeight: '1.6', marginBottom: '30px' }}>
-            {level} 배정한자의 학습과 복습 테스트를 모두 마쳤습니다.<br/>
+            {isRadicalMode ? `${level}의 학습과 복습 테스트를 모두 마쳤습니다.` : `${level} 배정한자의 학습과 복습 테스트를 모두 마쳤습니다.`}<br/>
             반복적으로 학습하면 한자 실력이 더욱 자라납니다.
           </p>
           

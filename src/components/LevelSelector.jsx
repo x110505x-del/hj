@@ -4,12 +4,35 @@ import { HANJA_LEVELS } from '../services/hanjaDb';
 import { getRankByXp, removeWrongHanja, RANKS } from '../services/mockDb';
 import { speakKorean, unlockTtsAudio } from '../utils/tts';
 import Leaderboard from './Leaderboard';
+import { RADICALS_DATA } from '../services/radicalDb';
 
-export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMode, soundOn, onToggleSound, profile, onOpenLoginModal, onLogout, onUpdateProfile }) {
+export default function LevelSelector({ 
+  selectedLevel, 
+  onSelectLevel, 
+  onStartMode, 
+  soundOn, 
+  onToggleSound, 
+  profile, 
+  onOpenLoginModal, 
+  onLogout, 
+  onUpdateProfile,
+  onStartRadicalFlashcards,
+  onStartRadicalReveal,
+  onStartRadicalSpeedQuiz,
+  onStartRadicalRainGame,
+  isRadicalModalOpen,
+  setIsRadicalModalOpen
+}) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(profile?.username || '');
   const [showRankGuide, setShowRankGuide] = useState(false);
   const [activeTab, setActiveTab] = useState('logs'); // 'logs' | 'wrong'
+  const [radicalStrokes, setRadicalStrokes] = useState('all');
+
+  const getRadicalCountForStroke = (stroke) => {
+    return RADICALS_DATA.filter(r => r.strokes === stroke).length;
+  };
+
 
   useEffect(() => {
     if (profile?.username) {
@@ -410,7 +433,7 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           </div>
           <div>
             <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', color: '#1f2937', fontWeight: 'bold' }}>
-              플래쉬 카드 연습
+              플래시 카드 연습
             </h3>
             <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
               자동 재생 루프로 보고만 있어도 눈과 귀로 한자(추가되는 배정한자)를 자연스럽게 익힙니다.
@@ -622,6 +645,59 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           </div>
         </div>
       </div>
+
+      {/* 한자 부수(214자) 익히기 */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '14px',
+        background: 'rgba(16, 185, 129, 0.03)',
+        border: '2px solid var(--color-border)',
+        borderRadius: '16px',
+        padding: '24px 20px',
+        boxSizing: 'border-box',
+        width: '100%'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+          <Sparkles size={22} style={{ color: 'var(--color-primary)' }} />
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--color-primary)', margin: 0 }}>
+            한자 부수(214자) 익히기
+          </h2>
+        </div>
+        
+        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0, lineHeight: '1.4', textAlign: 'center' }}>
+          한자를 찾기 위한 기본 분류 단위인 214자의 부수 한자를 학습하는 코너입니다.<br/>
+          원하는 부수의 획수(1획 ~ 17획)를 선택하여 수련해 보세요.
+        </p>
+
+        <button 
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              unlockTtsAudio();
+            }
+            setIsRadicalModalOpen(true);
+          }}
+          className="theme-btn theme-btn-primary"
+          style={{
+            padding: '12px 30px',
+            fontSize: '0.95rem',
+            fontWeight: 'bold',
+            borderRadius: '10px',
+            boxShadow: 'var(--shadow-sm)',
+            cursor: 'pointer',
+            marginTop: '8px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}
+        >
+          <BookOpen size={18} /> 학습하기
+        </button>
+      </div>
+
+
 
       {/* 📊 나의 학습 현황 및 수련 기록 섹션 */}
       <div style={{
@@ -1217,6 +1293,290 @@ export default function LevelSelector({ selectedLevel, onSelectLevel, onStartMod
           </div>
         );
       })()}
+
+      {/* 🔮 부수 한자 학습 설정 모달 (Radical Hanja Study Settings Modal) */}
+      {isRadicalModalOpen && (
+        <div 
+          onClick={() => setIsRadicalModalOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="glass-card"
+            style={{
+              width: '100%',
+              maxWidth: '550px',
+              padding: '28px 24px',
+              borderRadius: '20px',
+              boxShadow: 'var(--shadow-2xl)',
+              backgroundColor: '#ffffff',
+              border: '1px solid var(--color-border)',
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              position: 'relative',
+              textAlign: 'left'
+            }}
+          >
+            {/* 닫기 버튼 */}
+            <button 
+              onClick={() => setIsRadicalModalOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+                padding: '4px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <X size={20} />
+            </button>
+
+            {/* 헤더 */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', marginBottom: '6px' }}>
+                <Sparkles size={22} style={{ color: 'var(--color-primary)' }} />
+                <h3 style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--color-primary)', margin: 0 }}>
+                  부수 한자 학습 설정
+                </h3>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                획수와 학습할 게임/모드를 선택하여 도전해 보세요!
+              </p>
+            </div>
+
+            {/* 획수 선택 */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              backgroundColor: 'rgba(16, 185, 129, 0.03)',
+              borderRadius: '12px',
+              border: '1.5px solid var(--color-border)'
+            }}>
+              <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                필터링할 획수 선택
+              </span>
+              <select 
+                value={radicalStrokes} 
+                onChange={(e) => setRadicalStrokes(e.target.value)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: '1.5px solid var(--color-primary)',
+                  fontSize: '0.9rem',
+                  fontWeight: 'bold',
+                  color: 'var(--color-primary)',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: '#ffffff'
+                }}
+              >
+                <option value="all">전체 부수 (214자)</option>
+                {Array.from({ length: 17 }, (_, i) => i + 1).map(stroke => {
+                  const count = getRadicalCountForStroke(stroke);
+                  return (
+                    <option key={stroke} value={stroke.toString()}>
+                      {stroke}획 ({count}자)
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            
+            {/* 안내 문구 */}
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center', marginTop: '-10px', marginBottom: '4px' }}>
+              * 선택한 획수의 하위 획수 한자는 포함하여 플래이 됩니다! (플래쉬카드 연습 제외)
+            </div>
+
+            {/* 모드 선택 Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '12px',
+              marginTop: '4px'
+            }}>
+              {/* 1. 플래시카드 */}
+              <button
+                onClick={() => {
+                  setIsRadicalModalOpen(false);
+                  onStartRadicalFlashcards(radicalStrokes);
+                }}
+                className="theme-btn"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '16px',
+                  borderRadius: '14px',
+                  border: '2px solid var(--color-border)',
+                  backgroundColor: '#ffffff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                  e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                }}
+              >
+                <BookOpen size={24} style={{ color: 'var(--color-primary)' }} />
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--color-primary)', textAlign: 'center' }}>
+                  플래시카드 연습
+                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                  자동 읽기 및 복습
+                </span>
+              </button>
+
+              {/* 2. 가려진 한자 맞추기 */}
+              <button
+                onClick={() => {
+                  setIsRadicalModalOpen(false);
+                  onStartRadicalReveal(radicalStrokes);
+                }}
+                className="theme-btn"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '16px',
+                  borderRadius: '14px',
+                  border: '2px solid var(--color-border)',
+                  backgroundColor: '#ffffff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                  e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                }}
+              >
+                <Eye size={24} style={{ color: 'var(--color-primary)' }} />
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--color-primary)', textAlign: 'center', whiteSpace: 'nowrap', letterSpacing: '-0.5px' }}>
+                  가려진 한자 맞추기
+                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                  순차적 단서로 맞추기
+                </span>
+              </button>
+
+              {/* 3. 스피드 퀴즈 */}
+              <button
+                onClick={() => {
+                  setIsRadicalModalOpen(false);
+                  onStartRadicalSpeedQuiz(radicalStrokes);
+                }}
+                className="theme-btn"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '16px',
+                  borderRadius: '14px',
+                  border: '2px solid var(--color-border)',
+                  backgroundColor: '#ffffff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                  e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                }}
+              >
+                <Clock size={24} style={{ color: 'var(--color-primary)' }} />
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--color-primary)', textAlign: 'center' }}>
+                  스피드 퀴즈
+                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                  5초 제한 시간 테스트
+                </span>
+              </button>
+
+              {/* 4. 한자비 게임 */}
+              <button
+                onClick={() => {
+                  setIsRadicalModalOpen(false);
+                  onStartRadicalRainGame(radicalStrokes);
+                }}
+                className="theme-btn"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '16px',
+                  borderRadius: '14px',
+                  border: '2px solid var(--color-border)',
+                  backgroundColor: '#ffffff',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                  e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.02)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                }}
+              >
+                <CloudRain size={24} style={{ color: 'var(--color-primary)' }} />
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--color-primary)', textAlign: 'center' }}>
+                  한자비 게임
+                </span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textAlign: 'center', whiteSpace: 'nowrap', letterSpacing: '-0.5px' }}>
+                  떨어지는 한자 타격 게임
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

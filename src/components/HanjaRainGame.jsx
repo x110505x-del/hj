@@ -3,9 +3,10 @@ import { ArrowLeft, Heart, Award, RefreshCw, Volume2, VolumeX, Flame, Trophy, Pl
 import { getHanjaByLevel } from '../services/hanjaDb';
 import { speakKorean, cancelSpeech, unlockTtsAudio } from '../utils/tts';
 import { addStudyLog } from '../services/mockDb';
+import { RADICALS_DATA, EXPANDED_RADICALS_DATA } from '../services/radicalDb';
 
-export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, onCompleteGame }) {
-  const allHanja = getHanjaByLevel(level, false);
+export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, onCompleteGame, customCards, isRadicalMode }) {
+  const allHanja = customCards ? customCards : getHanjaByLevel(level, false);
   
   const [gameState, setGameState] = useState('ready'); // 'ready' | 'playing' | 'gameover' | 'victory'
   const [score, setScore] = useState(0);
@@ -285,7 +286,15 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     totalLevelCountRef.current = shuffledHanja.length;
 
     // Pick 10 random Hanja to construct initial bottom cards
-    const initialBottom = [...allHanja].sort(() => 0.5 - Math.random()).slice(0, 10);
+    let initialBottomPool = [...allHanja];
+    if (initialBottomPool.length < 10) {
+      const extraPool = isRadicalMode ? EXPANDED_RADICALS_DATA : getHanjaByLevel('4급');
+      const extra = extraPool.filter(h => !initialBottomPool.some(ib => ib.id === h.id))
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 10 - initialBottomPool.length);
+      initialBottomPool = [...initialBottomPool, ...extra];
+    }
+    const initialBottom = initialBottomPool.sort(() => 0.5 - Math.random()).slice(0, 10);
     setBottomCards(initialBottom);
 
     setGameState('playing');
@@ -326,7 +335,15 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       let newBottom = [...prevBottom];
       
       if (newBottom.length === 0) {
-        const initial = [...allHanja].sort(() => 0.5 - Math.random()).slice(0, 10);
+        let initialPool = [...allHanja];
+        if (initialPool.length < 10) {
+          const extraPool = isRadicalMode ? EXPANDED_RADICALS_DATA : getHanjaByLevel('4급');
+          const extra = extraPool.filter(h => !initialPool.some(ip => ip.id === h.id))
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 10 - initialPool.length);
+          initialPool = [...initialPool, ...extra];
+        }
+        const initial = initialPool.sort(() => 0.5 - Math.random()).slice(0, 10);
         return initial;
       }
 
@@ -342,7 +359,8 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
       if (newBottom.length > 10) {
         newBottom = newBottom.slice(0, 10);
       } else if (newBottom.length < 10) {
-        const remainingPool = allHanja.filter(h => !newBottom.some(nb => nb.id === h.id));
+        const fillPool = isRadicalMode ? EXPANDED_RADICALS_DATA : allHanja;
+        const remainingPool = fillPool.filter(h => !newBottom.some(nb => nb.id === h.id));
         const needed = 10 - newBottom.length;
         const extra = remainingPool.sort(() => 0.5 - Math.random()).slice(0, needed);
         newBottom = [...newBottom, ...extra];
@@ -855,7 +873,11 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
                 flex: 1,
                 padding: '12px',
                 fontWeight: 'bold',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                whiteSpace: 'nowrap'
               }}>
                 <RefreshCw size={14} style={{ marginRight: '4px' }} /> 다시하기
               </button>
@@ -935,7 +957,11 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
                 flex: 1,
                 padding: '10px',
                 fontWeight: 'bold',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                whiteSpace: 'nowrap'
               }}>
                 <RefreshCw size={14} style={{ marginRight: '4px' }} /> 다시하기
               </button>

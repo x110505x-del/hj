@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, RefreshCw, Trophy, Target, Award, ArrowLeft, Clock } from 'lucide-react';
 import { getHanjaByLevel } from '../services/hanjaDb';
+import { RADICALS_DATA, EXPANDED_RADICALS_DATA } from '../services/radicalDb';
 
 function shuffleArray(array) {
   const arr = [...array];
@@ -11,7 +12,7 @@ function shuffleArray(array) {
   return arr;
 }
 
-export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound, onCompleteGame }) {
+export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound, onCompleteGame, customCards, isRadicalMode }) {
   const [gameState, setGameState] = useState('ready'); // 'ready' | 'playing' | 'gameover'
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -24,6 +25,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
   const [feedback, setFeedback] = useState(null);
 
   const TOTAL_QUESTIONS = 50;
+  const [totalQuestionsState, setTotalQuestionsState] = useState(TOTAL_QUESTIONS);
 
   // Sound effects
   const playSound = (type) => {
@@ -60,15 +62,18 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
   };
 
   const startGame = () => {
-    const rawData = getHanjaByLevel(level);
+    const rawData = customCards || getHanjaByLevel(level);
     if (!rawData || rawData.length === 0) {
-      alert('해당 급수의 한자 데이터가 없습니다.');
+      alert('데이터가 없습니다.');
       onBack();
       return;
     }
     
-    // Select 50 random characters
-    const shuffled = shuffleArray(rawData).slice(0, TOTAL_QUESTIONS);
+    // Select min(50, rawData.length) characters
+    const count = Math.min(TOTAL_QUESTIONS, rawData.length);
+    setTotalQuestionsState(count);
+    
+    const shuffled = shuffleArray(rawData).slice(0, count);
     setQuizQueue(shuffled);
     setScore(0);
     setCorrectCount(0);
@@ -82,7 +87,8 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
     setFeedback(null);
     
     const target = queue[index];
-    const pool = fullDb.filter(h => h.char !== target.char);
+    const distractorPool = isRadicalMode ? EXPANDED_RADICALS_DATA : fullDb;
+    const pool = distractorPool.filter(h => h.char !== target.char);
     const distractors = shuffleArray(pool).slice(0, 5);
     
     const options = shuffleArray([target, ...distractors]);
@@ -106,6 +112,9 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
       const points = (5 - revealLevel) * 5;
       setScore(s => s + points);
       setCorrectCount(c => c + 1);
+      
+      setRevealLevel(4); // 정답을 맞추면 즉시 가림막을 모두 해제하여 전체 한자를 보여줌
+      
       showFeedbackAndNext('correct', points);
     } else {
       playSound('wrong');
@@ -130,10 +139,10 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
       if (currentIndex + 1 >= quizQueue.length) {
         setGameState('gameover');
       } else {
-        setupQuestion(quizQueue, currentIndex + 1, getHanjaByLevel(level));
+        setupQuestion(quizQueue, currentIndex + 1, customCards || getHanjaByLevel(level));
         setCurrentIndex(i => i + 1);
       }
-    }, 1000);
+    }, 1200); // 전체 한자를 확인할 수 있도록 대기 시간을 1.2초로 약간 늘림
   };
 
   const finishGameAndClaim = () => {
@@ -164,7 +173,9 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
         <h2 style={{ fontSize: '1.8rem', color: 'var(--color-primary)', margin: '0 0 8px 0', fontWeight: 'bold' }}>
           수련 완료!
         </h2>
-        <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>가려진 한자 맞추기 50문제를 완주했습니다.</p>
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+          {isRadicalMode ? '가려진 부수 한자 맞추기' : '가려진 한자 맞추기'} {totalQuestionsState}문제를 완주했습니다.
+        </p>
         
         <div style={{
           background: '#f8fafc', border: '1px solid var(--color-border)', borderRadius: '12px',
@@ -172,7 +183,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
         }}>
           <div>
             <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>정답 횟수</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{correctCount} / {TOTAL_QUESTIONS}</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>{correctCount} / {totalQuestionsState}</div>
           </div>
           <div style={{ borderLeft: '1px solid var(--color-border)' }} />
           <div>
@@ -195,8 +206,8 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
         maxWidth: '600px', margin: '0 auto', padding: '24px', textAlign: 'center',
         display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center'
       }}>
-        <h2 style={{ fontSize: '2rem', color: 'var(--color-primary)', margin: 0, fontWeight: 'bold' }}>
-          가려진 한자 맞추기
+        <h2 style={{ fontSize: 'clamp(1.4rem, 6vw, 2rem)', color: 'var(--color-primary)', margin: 0, fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+          {isRadicalMode ? '가려진 부수 한자 맞추기' : '가려진 한자 맞추기'}
         </h2>
         <p style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
           한자가 처음에는 아랫부분만 살짝 보입니다.<br/>
@@ -259,7 +270,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
         
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-            <strong>{currentIndex + 1}</strong> / {TOTAL_QUESTIONS}
+            <strong>{currentIndex + 1}</strong> / {totalQuestionsState}
           </div>
           <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
             {score}점
@@ -269,6 +280,7 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
 
       {/* Main Game Card */}
       <div className="glass-card" style={{
+        width: '100%',
         padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px',
         border: '1px solid var(--color-border)', borderRadius: '20px', backgroundColor: '#ffffff',
         boxShadow: 'var(--shadow-md)', position: 'relative'
@@ -353,7 +365,8 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               disabled={!!feedback}
               onClick={() => handleAnswer(opt)}
               style={{
-                padding: '12px 4px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
+                width: '100%', minWidth: 0, height: '54px',
+                padding: '0 6px', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: '#ffffff',
                 cursor: feedback ? 'default' : 'pointer', transition: 'all 0.15s', boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
                 display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 overflow: 'hidden'
@@ -361,8 +374,8 @@ export default function HanjaRevealGame({ level, onBack, soundOn, onToggleSound,
               onMouseEnter={(e) => { if(!feedback) { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.03)'; } }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.backgroundColor = '#ffffff'; }}
             >
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{opt.meaning}</span>
-              <span style={{ color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 'bold' }}>{opt.sound}</span>
+              <span style={{ flex: 1, color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 'bold', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', textAlign: 'right' }}>{opt.meaning}</span>
+              <span style={{ flexShrink: 0, color: 'var(--color-accent)', fontSize: '0.9rem', fontWeight: 'bold', textAlign: 'left' }}>{opt.sound}</span>
             </button>
           ))}
         </div>
