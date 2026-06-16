@@ -88,9 +88,9 @@ export async function loadProfileFromCloud(email, provider) {
 
   try {
     const key = obfuscateEmail(email);
-    const url = `${KV_BASE_URL}${key}`;
+    const url = `${KV_BASE_URL}${key}?t=${Date.now()}`;
 
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
       if (response.status === 404) {
         // No profile exists on the cloud yet
@@ -130,11 +130,11 @@ export async function loadProfileFromCloud(email, provider) {
  */
 export async function fetchGlobalLeaderboard() {
   try {
-    const boardUrl = `${KV_BASE_URL}global_hanja_leaderboard`;
+    const boardUrl = `${KV_BASE_URL}global_hanja_leaderboard?t=${Date.now()}`;
     let boardList = [];
     
     // 1. Fetch current aggregated board
-    const response = await fetch(boardUrl);
+    const response = await fetch(boardUrl, { cache: 'no-store' });
     if (response.ok) {
       const data = await response.json();
       if (data && Array.isArray(data.board)) {
@@ -145,7 +145,7 @@ export async function fetchGlobalLeaderboard() {
     }
 
     // 2. Fetch all keys in the bucket to find registered users (usr_*)
-    const keysResponse = await fetch(`${KV_BASE_URL}?format=json`);
+    const keysResponse = await fetch(`${KV_BASE_URL}?format=json&t=${Date.now()}`, { cache: 'no-store' });
     if (keysResponse.ok) {
       const keys = await keysResponse.json();
       if (Array.isArray(keys)) {
@@ -161,7 +161,7 @@ export async function fetchGlobalLeaderboard() {
         if (missingUserKeys.length > 0) {
           const fetchPromises = missingUserKeys.map(async (key) => {
             try {
-              const res = await fetch(`${KV_BASE_URL}${key}`);
+              const res = await fetch(`${KV_BASE_URL}${key}?t=${Date.now()}`, { cache: 'no-store' });
               if (res.ok) {
                 const profile = await res.json();
                 if (profile && profile.username) {
@@ -194,7 +194,7 @@ export async function fetchGlobalLeaderboard() {
             boardList = boardList.slice(0, 100);
 
             // 4. Optimistically write back the healed board to kvdb using text/plain (CORS bypass)
-            fetch(boardUrl, {
+            fetch(`${KV_BASE_URL}global_hanja_leaderboard`, {
               method: 'POST',
               headers: { 'Content-Type': 'text/plain' },
               body: JSON.stringify({ board: boardList })
@@ -219,10 +219,11 @@ export async function updateGlobalLeaderboard(profile) {
   
   try {
     const url = `${KV_BASE_URL}global_hanja_leaderboard`;
+    const getUrl = `${url}?t=${Date.now()}`;
     let currentBoard = [];
     
     // 1. Fetch current board
-    const getRes = await fetch(url);
+    const getRes = await fetch(getUrl, { cache: 'no-store' });
     if (getRes.ok) {
       const data = await getRes.json();
       if (data && Array.isArray(data.board)) {
@@ -277,7 +278,7 @@ export async function updateGlobalLeaderboard(profile) {
  */
 export async function getCloudAdminUsersList() {
   try {
-    const keysResponse = await fetch(`${KV_BASE_URL}?format=json`);
+    const keysResponse = await fetch(`${KV_BASE_URL}?format=json&t=${Date.now()}`, { cache: 'no-store' });
     if (!keysResponse.ok) return [];
     
     const keys = await keysResponse.json();
@@ -287,7 +288,7 @@ export async function getCloudAdminUsersList() {
     
     const fetchPromises = userKeys.map(async (key) => {
       try {
-        const res = await fetch(`${KV_BASE_URL}${key}`);
+        const res = await fetch(`${KV_BASE_URL}${key}?t=${Date.now()}`, { cache: 'no-store' });
         if (res.ok) {
           const profile = await res.json();
           if (profile && profile.username) {
