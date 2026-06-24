@@ -116,25 +116,81 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
     });
   }, [allHanja, searchQuery]);
 
-  // Fetch traditional character stroke vector data dynamically
+  // Fetch traditional character stroke vector data dynamically using Multi-CDN Fallback & Timeout
   useEffect(() => {
     if (!currentHanja) return;
     
+    // Tight timeout helper
+    const fetchJsonWithTimeout = async (url, timeoutMs = 1200) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(id);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.strokes && data.strokes.length > 0) {
+            return data;
+          }
+        }
+        throw new Error(`Non-ok response or empty data from ${url}`);
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
+      }
+    };
+
+    // Race helper for multiple CDNs in a tier
+    const raceCDNs = (urls, timeoutMs = 1200) => {
+      return new Promise((resolve, reject) => {
+        let errors = [];
+        let completed = 0;
+        if (urls.length === 0) reject(new Error('No URLs to race'));
+        urls.forEach(url => {
+          fetchJsonWithTimeout(url, timeoutMs)
+            .then(resolve)
+            .catch(err => {
+              errors.push(err);
+              completed++;
+              if (completed === urls.length) {
+                reject(new Error('All raced CDNs failed in this tier'));
+              }
+            });
+        });
+      });
+    };
+
     const fetchStrokeData = async (character) => {
-      const url1 = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2/${encodeURIComponent(character)}.json`;
-      const url2 = `https://cdn.jsdelivr.net/npm/hanzi-writer-data-traditional@1.0/${encodeURIComponent(character)}.json`;
-      
-      try {
-        const res = await fetch(url1);
-        if (res.ok) return await res.json();
-      } catch(e) {}
-      
-      try {
-        const res = await fetch(url2);
-        if (res.ok) return await res.json();
-      } catch(e) {}
-      
-      throw new Error('Not found in both repositories');
+      const charEncoded = encodeURIComponent(character);
+
+      // Define three sequential tiers of CDNs: jsDelivr, unpkg, and fastly
+      const tiers = [
+        // Tier 1: Simplified/Standard data
+        [
+          `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2/${charEncoded}.json`,
+          `https://unpkg.com/hanzi-writer-data@2/${charEncoded}.json`
+        ],
+        // Tier 2: Traditional CJK data
+        [
+          `https://cdn.jsdelivr.net/npm/hanzi-writer-data-traditional@1.0/${charEncoded}.json`,
+          `https://unpkg.com/hanzi-writer-data-traditional@1.0/${charEncoded}.json`
+        ],
+        // Tier 3: Japanese Kanji data (highly compatible stroke shapes)
+        [
+          `https://cdn.jsdelivr.net/npm/hanzi-writer-data-jp@latest/${charEncoded}.json`,
+          `https://unpkg.com/hanzi-writer-data-jp@latest/${charEncoded}.json`
+        ]
+      ];
+
+      for (const urls of tiers) {
+        try {
+          const data = await raceCDNs(urls, 1200);
+          return data;
+        } catch (e) {
+          // Fall through to the next tier of CDNs
+        }
+      }
+      throw new Error('Character not found in any stroke vector database');
     };
 
     const loadStrokes = async () => {
@@ -165,7 +221,158 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
         '兩': '两',
         '黃': '黄',
         '黑': '黑',
-        '畫': '画'
+        '畫': '画',
+        // Failures mapped from failures_mapped.json
+        "檟": "槚",
+        "榦": "干",
+        "鏗": "铿",
+        "賡": "赓",
+        "硜": "硁",
+        "綌": "绤",
+        "闋": "阕",
+        "熲": "颎",
+        "駉": "𬳶",
+        "鯀": "鲧",
+        "鸛": "鹳",
+        "綰": "绾",
+        "纊": "纩",
+        "磽": "硗",
+        "窶": "窭",
+        "覯": "觏",
+        "詘": "诎",
+        "頍": "𫠆",
+        "騤": "骙",
+        "棊": "棋",
+        "旂": "旗",
+        "軝": "𬨂",
+        "頎": "颀",
+        "穠": "秾",
+        "闥": "闼",
+        "鏜": "镗",
+        "闍": "阇",
+        "擣": "捣",
+        "綯": "绹",
+        "櫝": "椟",
+        "蝀": "𬟽",
+        "倈": "俫",
+        "酈": "郦",
+        "壚": "垆",
+        "虆": "蔂",
+        "懍": "懔",
+        "禡": "祃",
+        "勱": "劢",
+        "纆": "𬙊",
+        "璊": "𫞩",
+        "鉑": "铂",
+        "魴": "鲂",
+        "籩": "笾",
+        "鈇": "𫓧",
+        "鮒": "鲋",
+        "濆": "𣸣",
+        "豶": "豮",
+        "紱": "绂",
+        "騑": "𬴂",
+        "駓": "𬳵",
+        "璸": "瑸",
+        "儐": "傧",
+        "簑": "蓑",
+        "鱨": "鲿",
+        "諝": "谞",
+        "墠": "𫮃",
+        "紲": "绁",
+        "騂": "骍",
+        "繅": "缫",
+        "餗": "𫗧",
+        "飱": "飧",
+        "繻": "𦈡",
+        "諟": "𬤊",
+        "塒": "埘",
+        "鳲": "鸤",
+        "釃": "酾",
+        "緦": "缌",
+        "駪": "𬳽",
+        "贐": "赆",
+        "諗": "谂",
+        "訐": "讦",
+        "嚶": "嘤",
+        "颺": "飏",
+        "鍚": "钖",
+        "鷊": "",
+        "懌": "怿",
+        "饁": "馌",
+        "攖": "撄",
+        "瘞": "瘗",
+        "輗": "𫐐",
+        "勩": "勚",
+        "鷖": "鹥",
+        "汙": "污",
+        "韞": "韫",
+        "媼": "媪",
+        "顒": "颙",
+        "騧": "䯄",
+        "俁": "俣",
+        "訏": "𬣙",
+        "騵": "𫘪",
+        "軏": "𫐄",
+        "煒": "炜",
+        "輶": "𬨎",
+        "憖": "慭",
+        "駰": "骃",
+        "訒": "讱",
+        "鎡": "镃",
+        "鏘": "锵",
+        "萇": "苌",
+        "賫": "赍",
+        "糴": "籴",
+        "覿": "觌",
+        "闐": "",
+        "戩": "戬",
+        "赬": "赪",
+        "棖": "枨",
+        "隮": "𬯀",
+        "嚌": "哜",
+        "蠐": "蛴",
+        "鰷": "鲦",
+        "皁": "皂",
+        "輈": "辀",
+        "譸": "诪",
+        "絰": "绖",
+        "銍": "铚",
+        "瑲": "玱",
+        "蠆": "虿",
+        "簀": "箦",
+        "縐": "绉",
+        "賰": "䞐",
+        "觶": "觯",
+        "絺": "𫄨",
+        "駸": "骎",
+        "縶": "絷",
+        "鮀": "𬶍",
+        "蘀": "萚",
+        "僤": "𫢸",
+        "梲": "棁",
+        "隤": "𬯎",
+        "諞": "谝",
+        "灃": "沣",
+        "詖": "诐",
+        "鉍": "铋",
+        "扞": "捍",
+        "諴": "𫍯",
+        "巘": "𪩘",
+        "獫": "猃",
+        "譓": "𬤝",
+        "鉷": "𫟹",
+        "鐶": "镮",
+        "鍰": "锾",
+        "頮": "颒",
+        "嘵": "哓",
+        "餱": "糇",
+        "鍭": "𬭤",
+        "纁": "𫄸",
+        "諼": "谖",
+        "翬": "翚",
+        "訩": "讻",
+        "齕": ""
       };
       
       if (HANJA_FALLBACK_MAP[targetChar]) {
