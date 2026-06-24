@@ -193,6 +193,81 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
       throw new Error('Character not found in any stroke vector database');
     };
 
+    const parseAnimCjkSvg = (xmlText) => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xmlText, 'image/svg+xml');
+      const paths = doc.querySelectorAll('svg > path');
+      
+      const strokesMap = {};
+      const mediansMap = {};
+      
+      paths.forEach(path => {
+        const id = path.getAttribute('id');
+        const clipPath = path.getAttribute('clip-path');
+        const d = path.getAttribute('d');
+        
+        if (id && id.includes('d')) {
+          const numMatch = id.match(/d(\d+)$/);
+          if (numMatch) {
+            const index = parseInt(numMatch[1], 10) - 1;
+            strokesMap[index] = d;
+          }
+        } else if (clipPath && clipPath.includes('c')) {
+          const numMatch = clipPath.match(/c(\d+)\)?$/);
+          if (numMatch) {
+            const index = parseInt(numMatch[1], 10) - 1;
+            const coords = [];
+            const tokens = d.split(/[MLCSQTZ\s,]+/i).filter(t => t.trim());
+            for (let i = 0; i < tokens.length - 1; i += 2) {
+              const x = Math.round(parseFloat(tokens[i]));
+              const y = Math.round(parseFloat(tokens[i+1]));
+              if (!isNaN(x) && !isNaN(y)) {
+                coords.push([x, y]);
+              }
+            }
+            mediansMap[index] = coords;
+          }
+        }
+      });
+      
+      const strokes = [];
+      const medians = [];
+      const len = Math.max(Object.keys(strokesMap).length, Object.keys(mediansMap).length);
+      for (let i = 0; i < len; i++) {
+        strokes.push(strokesMap[i] || '');
+        medians.push(mediansMap[i] || []);
+      }
+      
+      return { strokes, medians };
+    };
+
+    const fetchAnimCjkStrokeData = async (character) => {
+      const dec = character.charCodeAt(0);
+      const folders = ['svgsZhHans', 'svgsZhHant', 'svgsJa', 'svgsKo'];
+      
+      for (const folder of folders) {
+        const url = `https://cdn.jsdelivr.net/gh/parsimonhi/animCJK@master/${folder}/${dec}.svg`;
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), 1200);
+        
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(id);
+          if (res.ok) {
+            const xml = await res.text();
+            const parsed = parseAnimCjkSvg(xml);
+            if (parsed.strokes.length > 0) {
+              console.log(`HanjaWriter: Loaded animCJK stroke data for "${character}" from ${folder}`);
+              return parsed;
+            }
+          }
+        } catch (e) {
+          clearTimeout(id);
+        }
+      }
+      throw new Error('Character not found in animCJK database');
+    };
+
     const loadStrokes = async () => {
       setIsLoadingStrokes(true);
       setStrokeData(null);
@@ -379,18 +454,30 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
         targetChar = HANJA_FALLBACK_MAP[targetChar];
       }
       
+      // 1. Mapped Character - standard CDN JSON
       try {
-        console.log(`HanjaWriter: Fetching strokes for mapped char "${targetChar}" (original: "${char}")`);
+        console.log(`HanjaWriter: Fetching mapped char "${targetChar}" (original: "${char}") from standard CDNs`);
         const data = await fetchStrokeData(targetChar);
         setStrokeData(data);
         setIsLoadingStrokes(false);
         if (hasStarted) setIsPlaying(true);
         return;
       } catch (err) {
-        console.warn(`HanjaWriter: Mapped char "${targetChar}" failed. Trying original "${char}"...`);
+        console.warn(`HanjaWriter: Mapped char "${targetChar}" standard CDNs failed. Trying animCJK SVG...`);
       }
-      
-      // 3. Last resort: Try original character directly
+
+      // 2. Mapped Character - animCJK SVG
+      try {
+        const data = await fetchAnimCjkStrokeData(targetChar);
+        setStrokeData(data);
+        setIsLoadingStrokes(false);
+        if (hasStarted) setIsPlaying(true);
+        return;
+      } catch (err) {
+        console.warn(`HanjaWriter: Mapped char "${targetChar}" animCJK SVG failed. Trying original "${char}" standard CDNs...`);
+      }
+
+      // 3. Original Character - standard CDN JSON
       try {
         const data = await fetchStrokeData(char);
         setStrokeData(data);
@@ -398,7 +485,18 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
         if (hasStarted) setIsPlaying(true);
         return;
       } catch (err) {
-        console.error(`HanjaWriter: Both mapped and original character failed for "${char}":`, err);
+        console.warn(`HanjaWriter: Original char "${char}" standard CDNs failed. Trying original animCJK SVG...`);
+      }
+
+      // 4. Original Character - animCJK SVG
+      try {
+        const data = await fetchAnimCjkStrokeData(char);
+        setStrokeData(data);
+        setIsLoadingStrokes(false);
+        if (hasStarted) setIsPlaying(true);
+        return;
+      } catch (err) {
+        console.error(`HanjaWriter: All stroke fetching strategies failed for "${char}":`, err);
         setStrokeData(null);
         setIsLoadingStrokes(false);
       }
@@ -655,18 +753,62 @@ export default function HanjaWritingPractice({ level, onBack, soundOn, onToggleS
             strokeProgressRef.current = 0;
           }, 1800);
         } else {
-          const sweepRadius = sweepProgress * (canvasSize * 1.5);
-          const gradient = sCtx.createRadialGradient(0, 0, 0, 0, 0, sweepRadius);
-          gradient.addColorStop(0, '#1e293b');
-          gradient.addColorStop(0.9, '#334155');
-          gradient.addColorStop(1, 'transparent');
-          sCtx.fillStyle = gradient;
-          sCtx.fillRect(0, 0, canvasSize, canvasSize);
+          const w2 = canvasSize / 2;
+          const h2 = canvasSize / 2;
           
-          brushX = canvasSize / 4 + (canvasSize / 2) * sweepProgress + Math.sin(sweepProgress * Math.PI * 4) * 30;
-          brushY = canvasSize / 4 + (canvasSize / 2) * sweepProgress + Math.cos(sweepProgress * Math.PI * 4) * 20;
+          sCtx.clearRect(0, 0, canvasSize, canvasSize);
+          
+          // Draw fully revealed regions based on current progress
+          if (sweepProgress >= 0.4) {
+            sCtx.fillStyle = '#1e293b';
+            sCtx.fillRect(0, 0, w2, canvasSize); // Left half fully revealed
+          }
+          if (sweepProgress >= 0.7) {
+            sCtx.fillStyle = '#1e293b';
+            sCtx.fillRect(w2, 0, w2, h2); // Top-right fully revealed
+          }
+          
+          // Draw currently sweeping region and compute brush coordinates
+          if (sweepProgress < 0.4) {
+            // Phase 1: Sweep Left half top-to-bottom
+            const p = sweepProgress / 0.4;
+            const gradient = sCtx.createLinearGradient(0, 0, 0, canvasSize);
+            gradient.addColorStop(0, '#1e293b');
+            gradient.addColorStop(Math.min(1, p), '#1e293b');
+            gradient.addColorStop(Math.min(1, p + 0.15), 'transparent');
+            sCtx.fillStyle = gradient;
+            sCtx.fillRect(0, 0, w2, canvasSize);
+            
+            brushX = w2 / 2 + Math.sin(p * Math.PI * 6) * 15;
+            brushY = 20 + (canvasSize - 40) * p;
+          } else if (sweepProgress < 0.7) {
+            // Phase 2: Sweep Top-Right left-to-right/top-to-bottom
+            const p = (sweepProgress - 0.4) / 0.3;
+            const gradient = sCtx.createLinearGradient(w2, 0, canvasSize, h2);
+            gradient.addColorStop(0, '#1e293b');
+            gradient.addColorStop(Math.min(1, p), '#1e293b');
+            gradient.addColorStop(Math.min(1, p + 0.15), 'transparent');
+            sCtx.fillStyle = gradient;
+            sCtx.fillRect(w2, 0, w2, h2);
+            
+            brushX = (w2 + 20) + (w2 - 40) * p;
+            brushY = h2 / 2 + Math.cos(p * Math.PI * 6) * 10;
+          } else {
+            // Phase 3: Sweep Bottom-Right left-to-right/top-to-bottom
+            const p = (sweepProgress - 0.7) / 0.3;
+            const gradient = sCtx.createLinearGradient(w2, h2, canvasSize, canvasSize);
+            gradient.addColorStop(0, '#1e293b');
+            gradient.addColorStop(Math.min(1, p), '#1e293b');
+            gradient.addColorStop(Math.min(1, p + 0.15), 'transparent');
+            sCtx.fillStyle = gradient;
+            sCtx.fillRect(w2, h2, w2, h2);
+            
+            brushX = (w2 + 20) + (w2 - 40) * p;
+            brushY = (h2 + 20) + (h2 - 40) * p;
+          }
+          
           isBrushActive = true;
-          strokeProgressRef.current += 0.008 * speed;
+          strokeProgressRef.current += 0.005 * speed; // Slightly slower for more natural animation feel
         }
 
         oCtx.globalCompositeOperation = 'source-in';
