@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">한자 마스터</string>
+    <string name="title_activity_main">한자 마스터</string>
+    <string name="package_name">com.hanjamaster.app</string>
+    <string name="custom_url_scheme">com.hanjamaster.app</string>
+</resources>

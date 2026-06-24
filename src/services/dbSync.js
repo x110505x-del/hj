@@ -55,6 +55,7 @@ export async function saveProfileToCloud(profile) {
       lastActiveDate: profile.lastActiveDate,
       flashcardsToday: profile.flashcardsToday,
       loginSessionId: profile.loginSessionId,
+      createdAt: profile.createdAt || new Date().toISOString(),
       lastUpdated: new Date().toISOString()
     };
 
@@ -117,7 +118,8 @@ export async function loadProfileFromCloud(email, provider) {
       streakLastActive: cloudData.streakLastActive || null,
       lastActiveDate: cloudData.lastActiveDate || null,
       flashcardsToday: cloudData.flashcardsToday || 0,
-      loginSessionId: cloudData.loginSessionId || null
+      loginSessionId: cloudData.loginSessionId || null,
+      createdAt: cloudData.createdAt || cloudData.lastUpdated || new Date().toISOString()
     };
   } catch (error) {
     console.error('Cloud load error:', error);
@@ -297,6 +299,7 @@ export async function getCloudAdminUsersList() {
             const rName = getRankByXp(xp, streak).name;
             
             return {
+              key: key,
               username: profile.username,
               email: profile.email || 'guest@hanja.com',
               gold: profile.gold ?? 0,
@@ -307,6 +310,8 @@ export async function getCloudAdminUsersList() {
               rankName: rName,
               role: profile.role || 'user',
               studyHistory: profile.studyHistory || [],
+              createdAt: profile.createdAt || profile.lastUpdated || new Date().toISOString(),
+              lastActiveDate: profile.lastActiveDate || profile.lastUpdated || new Date().toISOString(),
               lastUpdated: profile.lastUpdated || new Date().toISOString()
             };
           }
@@ -418,5 +423,65 @@ export async function replyToGlobalFeedback(feedbackId, replyText) {
   } catch (err) {
     console.error('replyToGlobalFeedback error:', err);
     return { success: false };
+  }
+}
+
+export async function deleteUserProfileByKey(key) {
+  try {
+    const url = `${KV_BASE_URL}${key}`;
+    const response = await fetch(url, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      try {
+        const boardUrl = `${KV_BASE_URL}global_hanja_leaderboard`;
+        const getRes = await fetch(`${boardUrl}?t=${Date.now()}`, { cache: 'no-store' });
+        if (getRes.ok) {
+          const data = await getRes.json();
+          let board = data.board || data || [];
+          const originalLength = board.length;
+          board = board.filter(item => item.id !== key);
+          if (board.length !== originalLength) {
+            await fetch(boardUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({ board: board })
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("Leaderboard item removal failed", e);
+      }
+    }
+    
+    return response.ok;
+  } catch (error) {
+    console.error('Cloud delete error:', error);
+    return false;
+  }
+}
+
+export async function updateGlobalFeedback(feedbackId, updatedFields) {
+  try {
+    const currentFeedbacks = await fetchGlobalFeedbacks();
+    const index = currentFeedbacks.findIndex(f => f.id === feedbackId);
+    if (index > -1) {
+      currentFeedbacks[index] = {
+        ...currentFeedbacks[index],
+        ...updatedFields
+      };
+      const url = `${KV_BASE_URL}global_hanja_feedbacks`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ feedbacks: currentFeedbacks })
+      });
+      return response.ok;
+    }
+    return false;
+  } catch (err) {
+    console.error('updateGlobalFeedback error:', err);
+    return false;
   }
 }

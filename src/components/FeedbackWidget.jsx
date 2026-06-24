@@ -6,7 +6,6 @@ export default function FeedbackWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [type, setType] = useState('suggest'); // 'bug' | 'ux' | 'suggest'
   const [content, setContent] = useState('');
-  const [contact, setContact] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const panelRef = useRef(null);
@@ -37,16 +36,16 @@ export default function FeedbackWidget() {
       id: Date.now(),
       category: typeLabel,
       title: `챗봇 제보: ${content.substring(0, 15)}...`,
-      body: `[연락처: ${contact.trim() || '비공개'}]\n\n${content}`,
+      body: content,
       author: '익명 제보자',
       reply: null,
-      createdAt: new Date().toISOString().split('T')[0]
+      createdAt: new Date().toISOString().split('T')[0],
+      status: 'pending'
     };
       submitGlobalFeedback(feedbackData).then(() => {
         setIsSubmitting(false);
         setIsSubmitted(true);
         setContent('');
-        setContact('');
         
         // Also save locally for legacy/optimistic UI fallback
         try {
@@ -357,34 +356,6 @@ export default function FeedbackWidget() {
                 />
               </div>
 
-              {/* Contact info input */}
-              <div>
-                <label htmlFor="feedback-contact" style={{
-                  fontSize: '0.78rem',
-                  fontWeight: 'bold',
-                  color: 'var(--color-text-muted)',
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  회신받을 연락처 <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontWeight: 'normal' }}>(선택)</span>
-                </label>
-                <input
-                  id="feedback-contact"
-                  type="text"
-                  value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  placeholder="이메일 주소 혹은 전화번호"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    fontSize: '0.8rem',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '8px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
 
               {/* Submit button */}
               <button

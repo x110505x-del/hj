@@ -1,5 +1,7 @@
 // Robust SpeechSynthesis Wrapper for Cross-Browser Reliability
 // Prevents premature garbage collection in Chrome and Safari
+import { Capacitor } from '@capacitor/core';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 
 let activeUtterances = [];
 const audioCache = new Map();
@@ -240,6 +242,63 @@ export const speakKorean = (text, options = {}) => {
   // 텍스트 조작 없이 순수한 단일 오디오 객체를 2번 반복 재생(loop)하도록 플래그만 추출합니다.
   const shouldRepeatAudio = repeatTwice && !hasSlash;
 
+  if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+    console.log("TTS Native: Speaking text:", finalSpeechText);
+    TextToSpeech.stop().catch(() => {});
+    
+    let pitchVal = 1.0;
+    let rateVal = rate;
+    
+    if (voiceType === 'child') {
+      pitchVal = 1.4;
+      rateVal = rate * 1.1;
+    } else if (voiceType === 'male') {
+      pitchVal = 0.8;
+      rateVal = rate;
+    } else {
+      pitchVal = 1.0;
+      rateVal = rate;
+    }
+
+    const runNativeSpeak = async () => {
+      try {
+        await TextToSpeech.speak({
+          text: finalSpeechText,
+          lang: 'ko-KR',
+          rate: rateVal,
+          pitch: pitchVal,
+          volume: 1.0,
+          category: 'ambient',
+        });
+        
+        if (shouldRepeatAudio) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+          await TextToSpeech.speak({
+            text: finalSpeechText,
+            lang: 'ko-KR',
+            rate: rateVal,
+            pitch: pitchVal,
+            volume: 1.0,
+            category: 'ambient',
+          });
+        }
+        
+        if (onEnd) onEnd();
+      } catch (err) {
+        console.error("Native TTS failed, falling back to Web:", err);
+        alert("Native TTS Error: " + (err?.message || JSON.stringify(err)) + "\n웹 음성 모드로 전환합니다.");
+        if (skipCancel) {
+          runSpeak();
+        } else {
+          pendingSpeakTimeout = setTimeout(runSpeak, 100);
+        }
+      }
+    };
+    
+    runNativeSpeak();
+    return;
+  }
+
   console.log("TTS: Attempting to speak:", finalSpeechText, "using VoiceType:", voiceType);
 
   // Stop any active HTML5 audio fallback
@@ -268,7 +327,7 @@ export const speakKorean = (text, options = {}) => {
   }
 
   // Local native SpeechSynthesis fallback
-  const runLocalSpeechSynthesis = () => {
+  function runLocalSpeechSynthesis() {
     try {
       if (!('speechSynthesis' in window)) {
         console.log("TTS: SpeechSynthesis not supported.");
@@ -418,7 +477,7 @@ export const speakKorean = (text, options = {}) => {
     }
   };
 
-  const runSpeak = () => {
+  function runSpeak() {
     // 무조건 구글 번역 TTS URL (https://translate.google.com/translate_tts?...) 주소를 활용한 오디오 객체 재생을 최우선 시도
     console.log("TTS: Using Google Translate Cloud TTS for natural voice.");
     playFallbackAudio(finalSpeechText, rate, voiceType, onEnd, (err) => {
@@ -443,6 +502,9 @@ export const cancelSpeech = () => {
   }
 
   if (typeof window !== 'undefined') {
+    if (Capacitor.isNativePlatform()) {
+      TextToSpeech.stop().catch(e => console.warn("Native TTS cancel error:", e));
+    }
     if ('speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel();

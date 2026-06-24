@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RefreshCw, Play, Volume2, Info, ChevronLeft, ChevronRight, Check, AlertTriangle } from 'lucide-react';
 import { HANJA_DATA, updateAnswerStats } from '../services/mockDb';
+import { speakKorean, cancelSpeech, unlockTtsAudio } from '../utils/tts';
 
 export default function LearningCanvas({ profile, onUpdateProfile, onNavigate }) {
   const levelData = HANJA_DATA[profile.currentLevel] || HANJA_DATA['8급'];
@@ -21,14 +22,14 @@ export default function LearningCanvas({ profile, onUpdateProfile, onNavigate })
 
   // Synthesize pronunciation
   const speakCurrent = () => {
-    if (!profile.soundOn || !('speechSynthesis' in window) || !currentHanja) return;
-    window.speechSynthesis.cancel();
-    const text = `${currentHanja.meaning} ${currentHanja.sound}`;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ko-KR';
-    utterance.pitch = profile.voice.startsWith('kids') ? 1.4 : 0.95;
-    utterance.rate = profile.voice.startsWith('kids') ? 1.2 : 0.95;
-    window.speechSynthesis.speak(utterance);
+    if (!profile.soundOn || !currentHanja) return;
+    cancelSpeech();
+    const text = `${currentHanja.meaning}, ${currentHanja.sound}`;
+    speakKorean(text, {
+      voiceType: profile.voice.startsWith('kids') ? 'child' : 'female',
+      rate: profile.voice.startsWith('kids') ? 1.15 : 0.95,
+      repeatTwice: false
+    });
   };
 
   // Re-draw background lines, grids, and trace templates
@@ -293,11 +294,13 @@ export default function LearningCanvas({ profile, onUpdateProfile, onNavigate })
         const updatedProfile = { ...profile, xp: profile.xp + 10, gold: profile.gold + 5 };
         onUpdateProfile(updatedProfile);
 
-        if (profile.soundOn && 'speechSynthesis' in window) {
-          const u = new SpeechSynthesisUtterance("정답입니다");
-          u.rate = 1.3;
-          u.volume = 0.5;
-          window.speechSynthesis.speak(u);
+        if (profile.soundOn) {
+          speakKorean("정답입니다", {
+            voiceType: 'female',
+            rate: 1.3,
+            repeatTwice: false,
+            skipCancel: true
+          });
         }
       } else {
         setFeedback({
@@ -317,11 +320,13 @@ export default function LearningCanvas({ profile, onUpdateProfile, onNavigate })
 
   const triggerHapticShake = () => {
     // Speak corrective voice or play beep if sound is on
-    if (profile.soundOn && 'speechSynthesis' in window) {
-      const u = new SpeechSynthesisUtterance("다시");
-      u.rate = 2.0;
-      u.volume = 0.4;
-      window.speechSynthesis.speak(u);
+    if (profile.soundOn) {
+      speakKorean("다시", {
+        voiceType: 'female',
+        rate: 2.0,
+        repeatTwice: false,
+        skipCancel: true
+      });
     }
     // We add shaking styling to canvas container by state toggle
     const container = document.querySelector('.canvas-container');
