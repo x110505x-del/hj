@@ -383,8 +383,8 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     const randomCard = spawnQueueRef.current.shift();
     const randomX = 10 + Math.random() * 75;
     
-    // Increased base speed as requested by user (0.05 to 0.13)
-    const baseSpeed = 0.05 + Math.random() * 0.08;
+    // Increased base speed as requested by user (0.07 to 0.16)
+    const baseSpeed = 0.07 + Math.random() * 0.09;
     const speedMultiplier = 1 + (scoreRef.current / 600); // Slower speed ramp-up
     let finalSpeed = Math.min(0.8, baseSpeed * speedMultiplier); // Capped at 0.8 to prevent super-fast falls
 
@@ -520,6 +520,15 @@ export default function HanjaRainGame({ level, onBack, soundOn, onToggleSound, o
     } else {
       setCombo(0);
       setHighlightedId(card.id);
+      playMissSound();
+      
+      setLives((prevLives) => {
+        const nextLives = prevLives - 1;
+        if (nextLives <= 0) {
+          setGameState('gameover');
+        }
+        return Math.max(0, nextLives);
+      });
       
       setTimeout(() => setHighlightedId(null), 300);
     }
