@@ -59,6 +59,14 @@ export default function App() {
     }
   }, [profile.isLoggedIn]);
 
+  // Force dashboard and open login modal if guest time expired
+  useEffect(() => {
+    if (guestTimeExpired) {
+      setCurrentScreen('selector');
+      setIsLoginOpen(true);
+    }
+  }, [guestTimeExpired]);
+
   useEffect(() => {
     const syncLocalFeedbacks = async () => {
       try {
@@ -151,13 +159,8 @@ export default function App() {
     }
 
     if (isAnon) {
-      if (soundOn && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance("로그인을 하시면 더욱 재미있는 수련을 할 수 있어요!");
-        utterance.lang = 'ko-KR';
-        window.speechSynthesis.speak(utterance);
-      }
-      alert("로그인을 하시면 더욱 재미있는 수련을 할 수 있어요!");
+      setGuestTimeExpired(true);
+      setIsLoginOpen(true);
     } else {
       if (soundOn && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -221,13 +224,8 @@ export default function App() {
       }
       alert(`🔥 플래시 카드 50자 학습 완료! 연속 ${streak}일 출석 성공!\n(보상: +30 XP)`);
     } else if (updated.flashcardsToday === 50 && !updated.isLoggedIn) {
-      if (soundOn && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance("로그인을 하시면 더욱 재미있는 수련을 할 수 있어요!");
-        utterance.lang = 'ko-KR';
-        window.speechSynthesis.speak(utterance);
-      }
-      alert("로그인을 하시면 더욱 재미있는 수련을 할 수 있어요!");
+      setGuestTimeExpired(true);
+      setIsLoginOpen(true);
     }
 
     setProfile(updated);
