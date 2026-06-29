@@ -10,9 +10,8 @@ export const OAUTH_CONFIG = {
   GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '129173277068-q1q0eu7enee9gptru1s507q6rfv3shtm.apps.googleusercontent.com',
 
   // 2. Kakao JavaScript Key (from Kakao Developers Console -> My Application -> App Settings -> Keys)
-  // Example: 'abcdef0123456789abcdef0123456789'
-  // Please replace this placeholder with your Kakao Javascript Key!
-  KAKAO_JS_KEY: import.meta.env.VITE_KAKAO_JS_KEY || 'YOUR_KAKAO_JAVASCRIPT_KEY',
+  // Configured using your actual Kakao Developers Console key.
+  KAKAO_JS_KEY: import.meta.env.VITE_KAKAO_JS_KEY || '6a1320893ecff96b18fe95ebacb63028',
 
   // 3. Sandbox Mode (Default: false)
   // Set to false when deploying with real client keys.
