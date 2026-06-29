@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { saveProfileToCloud, loadProfileFromCloud } from '../services/dbSync';
 import { OAUTH_CONFIG } from '../config';
+import { DEFAULT_PROFILE } from '../services/mockDb';
 
-export default function LoginModal({ profile, onUpdateProfile, onClose }) {
+export default function LoginModal({ profile, isGuestLocked, onUpdateProfile, onClose }) {
   // Social sync steps: null | 'google' | 'kakao'
   const [socialStep, setSocialStep] = useState(null); 
   const [socialEmail, setSocialEmail] = useState('');
@@ -13,6 +14,16 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Play warning voice message on guest lock
+  useEffect(() => {
+    if (isGuestLocked && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance("게스트 무료 체험 시간이 만료되었습니다. 구글이나 카카오 계정으로 회원 가입하여 더 신나게 수련을 이어가 보세요!");
+      utterance.lang = 'ko-KR';
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [isGuestLocked]);
 
   // Dynamically load Google/Kakao SDK scripts if sandbox mode is disabled
   useEffect(() => {
@@ -127,7 +138,7 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
         // 2. Profile not found -> Auto-register immediately!
         const cleanName = name ? name.trim() : `${providerName} 수련생`;
         const newProfile = {
-          ...profile,
+          ...DEFAULT_PROFILE,
           isLoggedIn: true,
           email: email.trim().toLowerCase(),
           username: cleanName,
@@ -313,7 +324,7 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
       alignItems: 'center',
       zIndex: 10000,
       animation: 'fadeIn 0.25s ease-out'
-    }} onClick={onClose}>
+    }} onClick={() => { if (!isGuestLocked) onClose(); }}>
       
       {/* Modal Dialog Content Box */}
       <div 
@@ -335,28 +346,55 @@ export default function LoginModal({ profile, onUpdateProfile, onClose }) {
       >
         
         {/* Close Button */}
-        <button 
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '18px',
-            right: '18px',
-            background: 'none',
-            border: 'none',
-            color: '#9ca3af',
-            cursor: 'pointer',
-            padding: '4px',
+        {!isGuestLocked && (
+          <button 
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              top: '18px',
+              right: '18px',
+              background: 'none',
+              border: 'none',
+              color: '#9ca3af',
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <X size={22} />
+          </button>
+        )}
+
+        {isGuestLocked && (
+          <div style={{
+            backgroundColor: '#fff1f2',
+            border: '1.5px solid #fda4af',
+            borderRadius: '16px',
+            padding: '16px',
+            marginBottom: '20px',
             display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
             alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '50%',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        >
-          <X size={22} />
-        </button>
+            textAlign: 'center'
+          }}>
+            <span style={{ fontSize: '1.8rem' }}>⏱️</span>
+            <h3 style={{ color: '#be123c', fontWeight: 'bold', fontSize: '1.02rem', margin: 0 }}>
+              무료 수련 체험 시간(1분) 만료!
+            </h3>
+            <p style={{ color: '#9f1239', fontSize: '0.8rem', margin: 0, lineHeight: '1.45' }}>
+              가입하지 않은 게스트 수련은 최대 1분까지만 체험 가능합니다.<br />
+              지금 설정 완료된 구글/카카오 계정을 클릭하여 간편 가입하시고,<br />
+              모든 수련 기록을 안전하게 평생 보존해 보세요!
+            </p>
+          </div>
+        )}
 
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           {OAUTH_CONFIG.USE_SANDBOX_DEV_MODE && (

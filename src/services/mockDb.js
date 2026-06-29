@@ -170,7 +170,7 @@ export const HANJA_DATA = {
   ]
 };
 
-const DEFAULT_PROFILE = {
+export const DEFAULT_PROFILE = {
   username: '초보 수련자',
   isLoggedIn: false,
   email: '',

@@ -9,7 +9,7 @@ import FeedbackWidget from './components/FeedbackWidget';
 import LoginModal from './components/LoginModal';
 import AdminPanel from './components/AdminPanel';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
-import { getProfile, saveProfile, getKstDateString } from './services/mockDb';
+import { getProfile, saveProfile, getKstDateString, DEFAULT_PROFILE } from './services/mockDb';
 import { fetchGlobalNotice, fetchGlobalFeedbacks, loadProfileFromCloud, saveProfileToCloud } from './services/dbSync';
 import { Volume2, VolumeX } from 'lucide-react';
 import { getRadicalsByStrokes, getCumulativeRadicalCards } from './services/radicalDb';
@@ -27,6 +27,37 @@ export default function App() {
   const [isRadicalModalOpen, setIsRadicalModalOpen] = useState(false);
   const [activeRadicalGame, setActiveRadicalGame] = useState(null); // null | 'flashcard' | 'reveal_game' | 'speed_quiz' | 'rain_game'
   const [radicalGameCards, setRadicalGameCards] = useState([]);
+  const [guestTimeExpired, setGuestTimeExpired] = useState(false);
+
+  // Guest 1-minute limit monitor
+  useEffect(() => {
+    if (profile.isLoggedIn) {
+      localStorage.removeItem('hanja_guest_start_time');
+      setGuestTimeExpired(false);
+      return;
+    }
+
+    let guestStart = localStorage.getItem('hanja_guest_start_time');
+    if (!guestStart) {
+      guestStart = Date.now().toString();
+      localStorage.setItem('hanja_guest_start_time', guestStart);
+    }
+
+    const startTime = parseInt(guestStart, 10);
+    const elapsed = Date.now() - startTime;
+
+    if (elapsed >= 60 * 1000) {
+      setGuestTimeExpired(true);
+      setIsLoginOpen(true);
+    } else {
+      const remaining = (60 * 1000) - elapsed;
+      const timer = setTimeout(() => {
+        setGuestTimeExpired(true);
+        setIsLoginOpen(true);
+      }, remaining);
+      return () => clearTimeout(timer);
+    }
+  }, [profile.isLoggedIn]);
 
   useEffect(() => {
     const syncLocalFeedbacks = async () => {
@@ -73,15 +104,8 @@ export default function App() {
   }, [currentScreen]);
 
   const handleLogout = () => {
-    const updated = {
-      ...profile,
-      isLoggedIn: false,
-      email: '',
-      authProvider: '',
-      isPrivacyFirst: false
-    };
-    setProfile(updated);
-    saveProfile(updated);
+    setProfile(DEFAULT_PROFILE);
+    saveProfile(DEFAULT_PROFILE);
   };
 
   const handleCompleteGame = (goldEarned, xpEarned, isSuccess = true) => {
@@ -740,11 +764,16 @@ export default function App() {
       {isLoginOpen && (
         <LoginModal 
           profile={profile} 
+          isGuestLocked={guestTimeExpired}
           onUpdateProfile={(updated) => {
             setProfile(updated);
             saveProfile(updated);
           }} 
-          onClose={() => setIsLoginOpen(false)} 
+          onClose={() => {
+            if (!guestTimeExpired) {
+              setIsLoginOpen(false);
+            }
+          }} 
         />
       )}
     </div>
