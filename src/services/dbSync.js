@@ -11,7 +11,7 @@
 import { getRankByXp } from './rankDb';
 
 // Simple hashing function to obfuscate the email address for privacy
-function obfuscateEmail(email) {
+export function obfuscateEmail(email) {
   if (!email) return 'anon';
   const cleanEmail = email.trim().toLowerCase();
   let hash = 0;
@@ -25,7 +25,7 @@ function obfuscateEmail(email) {
 
 // Public anonymous KV storage bucket ID for Hanja Master
 const BUCKET_ID = 'WPnA3ko81FraCfgWmNSzPM';
-const KV_BASE_URL = `https://kvdb.io/${BUCKET_ID}/`;
+export const KV_BASE_URL = `https://kvdb.io/${BUCKET_ID}/`;
 
 /**
  * Saves profile data to the cloud

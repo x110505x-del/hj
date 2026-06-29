@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, ShieldAlert, AlertTriangle } from 'lucide-react';
-import { saveProfileToCloud, loadProfileFromCloud } from '../services/dbSync';
+import { saveProfileToCloud, loadProfileFromCloud, obfuscateEmail, KV_BASE_URL } from '../services/dbSync';
 import { OAUTH_CONFIG } from '../config';
 import { DEFAULT_PROFILE } from '../services/mockDb';
 
@@ -14,6 +14,12 @@ export default function LoginModal({ profile, isGuestLocked, onUpdateProfile, on
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Migration states
+  const [migrationMode, setMigrationMode] = useState(false);
+  const [migrationStep, setMigrationStep] = useState(1); // 1: input old email, 2: select social for binding
+  const [oldEmailInput, setOldEmailInput] = useState('');
+  const [foundOldProfile, setFoundOldProfile] = useState(null);
 
   // Play warning voice message on guest lock
   useEffect(() => {
@@ -111,7 +117,7 @@ export default function LoginModal({ profile, isGuestLocked, onUpdateProfile, on
     // Poll to make sure the element is ready in DOM
     intervalId = setInterval(checkAndRenderGoogle, 150);
     return () => clearInterval(intervalId);
-  }, [socialStep]);
+  }, [socialStep, migrationStep, migrationMode]);
 
   // Common handler to process both real login & signup
   const processLoginOrSignup = async (email, name, provider) => {
@@ -121,10 +127,45 @@ export default function LoginModal({ profile, isGuestLocked, onUpdateProfile, on
 
     try {
       const providerName = provider === 'google' ? '구글' : '카카오';
+      const newSessionId = Date.now() + '_' + Math.random().toString(36).substring(2);
+
+      // Handle account migration if active
+      if (migrationMode && foundOldProfile) {
+        const mergedProfile = {
+          ...foundOldProfile,
+          isLoggedIn: true,
+          email: email.trim().toLowerCase(),
+          username: name ? name.trim() : foundOldProfile.username,
+          authProvider: provider,
+          isPrivacyFirst: true,
+          loginSessionId: newSessionId,
+          lastUpdated: new Date().toISOString()
+        };
+
+        // Save to new social account's cloud key
+        await saveProfileToCloud(mergedProfile);
+
+        // Delete old profile key from cloud
+        try {
+          const oldKey = obfuscateEmail(foundOldProfile.email);
+          await fetch(`${KV_BASE_URL}${oldKey}`, { method: 'DELETE' });
+        } catch (e) {
+          console.warn("Could not delete old profile key during migration", e);
+        }
+
+        setSuccessMsg(`🎉 [이관 성공] 기존 계정 '${foundOldProfile.email}'의 수련 기록이 새 소셜 계정 '${email}'(으)로 완벽하게 이전되었습니다!`);
+        onUpdateProfile(mergedProfile);
+        setIsSubmitting(false);
+        setTimeout(() => {
+          setMigrationMode(false);
+          setFoundOldProfile(null);
+          onClose();
+        }, 2000);
+        return;
+      }
       
       // 1. Try to load existing profile from the cloud
       const existingProfile = await loadProfileFromCloud(email, provider);
-      const newSessionId = Date.now() + '_' + Math.random().toString(36).substring(2);
 
       if (existingProfile) {
         existingProfile.loginSessionId = newSessionId;
@@ -160,6 +201,39 @@ export default function LoginModal({ profile, isGuestLocked, onUpdateProfile, on
     } catch (error) {
       console.error("Auth process error:", error);
       setErrorMsg('클라우드 동기화 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOldEmail = async (e) => {
+    e.preventDefault();
+    if (!oldEmailInput.trim()) {
+      setErrorMsg('이메일 주소를 입력해 주세요.');
+      return;
+    }
+    if (!oldEmailInput.includes('@')) {
+      setErrorMsg('올바른 이메일 형식을 입력해 주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      // Load the profile from the cloud under that email
+      const oldProfile = await loadProfileFromCloud(oldEmailInput.trim());
+      if (oldProfile) {
+        setFoundOldProfile(oldProfile);
+        setMigrationStep(2);
+        setSuccessMsg(`기존 이메일 계정을 확인했습니다! 골드: ${oldProfile.gold || 0}G, 경험치: ${oldProfile.xp || 0}XP, 연속 학습: ${oldProfile.streak || 0}일.`);
+      } else {
+        setErrorMsg('입력하신 이메일로 저장된 기존 수련 기록을 찾을 수 없습니다. 오타가 없는지 확인해 주세요.');
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('기존 계정을 조회하는 중에 오류가 발생했습니다.');
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -421,7 +495,264 @@ export default function LoginModal({ profile, isGuestLocked, onUpdateProfile, on
           </p>
         </div>
 
-        {socialStep ? (
+        {migrationMode ? (
+          /* 🔄 ACCOUNT MIGRATION VIEW */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{
+              backgroundColor: '#f0f9ff',
+              border: '1px solid rgba(14, 165, 233, 0.25)',
+              borderRadius: '14px',
+              padding: '12px 14px',
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'flex-start'
+            }}>
+              <ShieldAlert size={18} color="#0284c7" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '0.75rem', lineHeight: '1.45', color: '#0369a1' }}>
+                <strong>기존 이메일 수련 기록 이관</strong><br />
+                이전에 이메일 주소만 입력하여 저장했던 수련 정보를 새 구글/카카오 계정으로 안전하게 통합하고 기존 이메일 기반 정보는 파기합니다.
+              </div>
+            </div>
+
+            {migrationStep === 1 ? (
+              /* Step 1: Input old email */
+              <form onSubmit={handleVerifyOldEmail} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#4b5563' }}>기존 이메일 주소 입력</label>
+                  <input
+                    type="email"
+                    required
+                    disabled={isSubmitting}
+                    placeholder="example@daum.net"
+                    value={oldEmailInput}
+                    onChange={(e) => setOldEmailInput(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      border: '1.5px solid var(--color-border)',
+                      fontSize: '0.9rem',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {errorMsg && (
+                  <div style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fee2e2',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    color: '#ef4444',
+                    fontSize: '0.8rem',
+                    textAlign: 'center',
+                    fontWeight: 'bold'
+                  }}>
+                    ⚠️ {errorMsg}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      setMigrationMode(false);
+                      setOldEmailInput('');
+                      setErrorMsg('');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '11px',
+                      borderRadius: '10px',
+                      border: '1px solid #d1d5db',
+                      backgroundColor: '#ffffff',
+                      color: '#4b5563',
+                      fontWeight: 'bold',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    style={{
+                      flex: 2,
+                      padding: '11px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      backgroundColor: 'var(--color-primary)',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      fontSize: '0.85rem',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {isSubmitting ? '기록 확인 중...' : '기존 기록 확인'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* Step 2: Show old profile stats and request social login */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '16px',
+                  padding: '14px',
+                  fontSize: '0.82rem',
+                  lineHeight: '1.5'
+                }}>
+                  <div style={{ fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>
+                    📦 이관 대상 수련생 기록 정보
+                  </div>
+                  <div>👤 수련생명: <strong>{foundOldProfile?.username}</strong></div>
+                  <div>✉️ 기존 이메일: <strong>{foundOldProfile?.email}</strong></div>
+                  <div>💰 보유 골드: <strong>{foundOldProfile?.gold || 0} G</strong></div>
+                  <div>🔥 연속 학습: <strong>{foundOldProfile?.streak || 0} 일</strong></div>
+                  <div>✨ 수련 경험치: <strong>{foundOldProfile?.xp || 0} XP</strong></div>
+                </div>
+
+                <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: 0, textAlign: 'center', lineHeight: '1.4' }}>
+                  위 기록을 통합 및 이관하여 연동할<br />
+                  <strong>구글 또는 카카오 소셜 계정으로 로그인</strong>해 주세요.
+                </p>
+
+                {/* Google Button */}
+                {OAUTH_CONFIG.USE_SANDBOX_DEV_MODE || OAUTH_CONFIG.GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com' ? (
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleGoogleClick}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '10px',
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: '#ffffff',
+                      color: '#334155',
+                      fontWeight: 'bold',
+                      fontSize: '0.9rem',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      boxShadow: 'var(--shadow-sm)',
+                      transition: 'all 0.2s',
+                      opacity: isSubmitting ? 0.7 : 1
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.77c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    Google 계정으로 이관 연동
+                  </button>
+                ) : (
+                  <div 
+                    id="google-signin-button" 
+                    style={{ 
+                      width: '100%', 
+                      display: 'flex', 
+                      justifyContent: 'center',
+                      minHeight: '44px'
+                    }} 
+                  />
+                )}
+
+                {/* Kakao Button */}
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={handleKakaoClick}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: '#fee500',
+                    color: '#191919',
+                    fontWeight: 'bold',
+                    fontSize: '0.9rem',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'all 0.2s',
+                    opacity: isSubmitting ? 0.7 : 1
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+                    <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.553 1.706 4.8 4.27 6.054-.188.702-.68 2.531-.777 2.916-.122.484.179.478.377.346.155-.103 2.453-1.666 3.447-2.329.544.08 1.103.128 1.683.128 4.97 0 9-3.185 9-7.115S16.97 3 12 3z"/>
+                  </svg>
+                  카카오 계정으로 이관 연동
+                </button>
+
+                {errorMsg && (
+                  <div style={{
+                    background: '#fef2f2',
+                    border: '1px solid #fee2e2',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    color: '#ef4444',
+                    fontSize: '0.8rem',
+                    textAlign: 'center',
+                    fontWeight: 'bold'
+                  }}>
+                    ⚠️ {errorMsg}
+                  </div>
+                )}
+
+                {successMsg && (
+                  <div style={{
+                    background: '#ecfdf5',
+                    border: '1px solid #d1fae5',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    color: 'var(--color-primary)',
+                    fontSize: '0.8rem',
+                    textAlign: 'center',
+                    fontWeight: 'bold'
+                  }}>
+                    ✅ {successMsg}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setFoundOldProfile(null);
+                    setMigrationStep(1);
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                  }}
+                  style={{
+                    padding: '11px',
+                    borderRadius: '10px',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: '#ffffff',
+                    color: '#4b5563',
+                    fontWeight: 'bold',
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    width: '100%'
+                  }}
+                >
+                  이전 단계로
+                </button>
+              </div>
+            )}
+          </div>
+        ) : socialStep ? (
           /* 🧪 SANDBOX SIMULATOR INPUT FORM */
           <form onSubmit={handleSandboxSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{
@@ -635,6 +966,31 @@ export default function LoginModal({ profile, isGuestLocked, onUpdateProfile, on
               </svg>
               카카오 계정으로 로그인 / 가입
             </button>
+
+            {/* Account Migration Launch Link */}
+            <div style={{ textAlign: 'center', marginTop: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setMigrationMode(true);
+                  setMigrationStep(1);
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-primary)',
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                기존 이메일 계정 수련 기록 이관하기
+              </button>
+            </div>
 
             {/* Status Feedback Messages */}
             {errorMsg && (
