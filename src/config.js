@@ -6,11 +6,12 @@
  */
 export const OAUTH_CONFIG = {
   // 1. Google Client ID (from Google Cloud Console -> APIs & Services -> Credentials)
-  // Example: '123456789-abcd.apps.googleusercontent.com'
-  GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+  // Retrieved from your Google Cloud Console project: hanjamaster
+  GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '129173277068-q1q0eu7enee9gptru1s507q6rfv3shtm.apps.googleusercontent.com',
 
   // 2. Kakao JavaScript Key (from Kakao Developers Console -> My Application -> App Settings -> Keys)
   // Example: 'abcdef0123456789abcdef0123456789'
+  // Please replace this placeholder with your Kakao Javascript Key!
   KAKAO_JS_KEY: import.meta.env.VITE_KAKAO_JS_KEY || 'YOUR_KAKAO_JAVASCRIPT_KEY',
 
   // 3. Sandbox Mode (Default: false)
